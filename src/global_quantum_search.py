@@ -3,6 +3,7 @@ import numpy as np
 import yfinance as yf
 import itertools
 import os
+import json
 
 def get_homogeneous_data(ticker, start="2021-07-01", end="2026-03-01"):
     """Descarga y homogeniza de forma estricta cualquier activo al estándar de estados."""
@@ -15,7 +16,6 @@ def get_homogeneous_data(ticker, start="2021-07-01", end="2026-03-01"):
         df.columns = [col[0] for col in df.columns]
     df = df.reset_index()
     
-    # Saneamiento estricto: eliminar ceros y nulos divisorios
     df = df.dropna()
     df = df[df['Close'] > 0].copy()
     
@@ -24,77 +24,51 @@ def get_homogeneous_data(ticker, start="2021-07-01", end="2026-03-01"):
     
     df['Market_State'] = np.where(df['Return'] > 0, 1, 0)
     
-    # Matrices de transiciones limpias
+    # Construcción de retrasos para N=2, N=3, N=4
     df['State_t'] = df['Market_State']
     df['State_t1'] = df['Market_State'].shift(1)
     df['State_t2'] = df['Market_State'].shift(2)
     df['State_t3'] = df['Market_State'].shift(3)
     df = df.dropna().copy()
     
-    # Códigos para Experimento 2 (N=3) y Experimento 3 (N=4)
+    # Índices decimales para los autómatas
+    df['Code_N2'] = (df['State_t1'] * 2 + df['State_t']).astype(int)
     df['Code_N3'] = (df['State_t2'] * 4 + df['State_t1'] * 2 + df['State_t']).astype(int)
     df['Code_N4'] = (df['State_t3'] * 8 + df['State_t2'] * 4 + df['State_t1'] * 2 + df['State_t']).astype(int)
     
     df['Next_Return'] = df['Return'].shift(-1)
     return df.dropna().copy()
 
-def run_matrix_tournament(universe_assets, num_states, code_column):
-    """Ejecuta por fuerza bruta matricial todo el universo de estrategias en milisegundos."""
-    num_strategies = 2 ** num_states
-    print(f"\n[*] Generando matriz de ADN para {num_strategies} estrategias...")
+def censo_completo_matricial(universe_assets, num_bits, code_column):
+    """Calcula el rendimiento de absolutamente TODAS las combinaciones en TODOS los activos."""
+    num_strategies = 2 ** num_bits
+    strategies_matrix = np.array(list(itertools.product([1, -1], repeat=num_bits)))
     
-    # Crear matriz de estrategias de tamaño (65536, 16) o (256, 8)
-    # Reemplazamos el bit 0 por -1 para simular la estrategia Long/Short agresiva
-    strategies_matrix = np.array(list(itertools.product([1, -1], repeat=num_states)))
-    
-    # Diccionario para guardar curvas de rendimiento por activo
     asset_results = {}
-    
     for ticker, df in universe_assets.items():
         states = df[code_column].values
         next_returns = df['Next_Return'].values
         
-        # MAGIA MATRICIAL (Advanced Indexing): Evaluamos todas las estrategias a la vez
-        # actions mapea la decisión de cada estrategia para cada día: forma (num_strategies, num_days)
+        # Multiplicación matricial masiva de acciones * retornos
         actions = strategies_matrix[:, states]
-        
-        # Calcular retornos diarios de las 65k estrategias en este activo
         daily_returns = actions * next_returns
+        cum_returns = (np.prod(1 + daily_returns, axis=1) - 1) * 100
+        asset_results[ticker] = cum_returns
         
-        # Rendimiento compuesto acumulado por estrategia: forma (num_strategies,)
-        cum_returns = np.prod(1 + daily_returns, axis=1) - 1
-        asset_results[ticker] = cum_returns * 100 # Guardar en porcentaje
-
-    # Buscar las estrategias "Globales" (Consistentes)
-    # Criterio: Deben ser rentables (Retorno > 0) en TODOS los mercados analizados
-    conditions = [asset_results[ticker] > 0 for ticker in universe_assets.keys()]
-    global_winners_mask = np.logical_and.reduce(conditions)
-    
-    indices_ganadores = np.where(global_winners_mask)[0]
-    
-    print(f"[FILTRO] ¡Se encontraron {len(indices_ganadores)} estrategias consistentes en TODO el portafolio global!")
-    
-    # Construir reporte de las mejores
-    report_data = []
-    for idx in indices_ganadores:
+    # Construir dataframe unificado del censo
+    records = []
+    for idx in range(num_strategies):
         dna_str = "".join(['1' if x == 1 else '0' for x in strategies_matrix[idx]])
         row = {"ID": idx, "Logica": dna_str}
-        total_score = 0
         for ticker in universe_assets.keys():
-            ret = asset_results[ticker][idx]
-            row[ticker] = ret
-            total_score += ret
-        row["Suma_Retornos"] = total_score
-        report_data.append(row)
+            row[ticker] = float(asset_results[ticker][idx])
+        records.append(row)
         
-    df_report = pd.DataFrame(report_data)
-    if not df_report.empty:
-        return df_report.sort_values(by="Suma_Retornos", ascending=False).head(10)
-    return None
+    return pd.DataFrame(records)
 
 def main():
     print("==================================================================")
-    print("   MOTOR DE BÚSQUEDA MATRICIAL GLOBAL ANTI-SESGO DE SELECCIÓN     ")
+    print("      MEGA TORNEO CUÁNTICO: MATRIZ DE CONVERGENCIA TOTAL          ")
     print("==================================================================")
     
     tickers = {
@@ -106,34 +80,80 @@ def main():
     }
     
     universe_data = {}
-    for t, name in tickers.items():
+    print("[*] Descargando e Ingestando datos históricos homogeneizados...")
+    for t in tickers.keys():
         df = get_homogeneous_data(t)
         if df is not None:
             universe_data[t] = df
             
-    print(f"\n[+] Datos homogeneizados correctamente para {len(universe_data)} activos.")
+    print(f"[OK] {len(universe_data)} activos listos en memoria.")
     
     # -------------------------------------------------------------
-    # TEST 1: EXPERIMENTO 2 (N=3, 256 Estrategias)
+    # PASO 1: LÍNEA DE BASE - EXPERIMENTO 1 (Buy & Hold)
     # -------------------------------------------------------------
-    print("\n" + "="*70)
-    print(" ANALIZANDO EL UNIVERSO DE LA MEMORIA DE 3 DÍAS (256 ESTRATEGIAS) ")
-    print("="*70)
-    top_exp2 = run_matrix_tournament(universe_data, num_states=8, code_column='Code_N3')
-    if top_exp2 is not None:
-        print("\n🏆 TOP 5 ESTRATEGIAS GLOBALES - EXPERIMENTO 2:")
-        print(top_exp2.head(5).to_string(index=False, formatters={t: '{:,.2f}%'.format for t in tickers.keys()}))
+    print("\n📊 EXPERIMENTO 1: RENDIMIENTO DEL MERCADO PURO (Buy & Hold)")
+    print("-" * 65)
+    for t, name in tickers.items():
+        df = universe_data[t]
+        bh = (df['Close'].iloc[-1] / df['Close'].iloc[0] - 1) * 100
+        print(f"  * {name:<15} ({t:<8}): {bh:>8.2f}%")
+    print("-" * 65)
+
+    # -------------------------------------------------------------
+    # PASO 2: EJECUCIÓN DE LOS TRES CENSOS MATRICIALES
+    # -------------------------------------------------------------
+    print("\n[🧬] Corriendo Censo del Experimento 1B (N=2, 16 lógicas)...")
+    df_n2 = censo_completo_matricial(universe_data, 4, 'Code_N2')
+    
+    print("[🧬] Corriendo Censo del Experimento 2  (N=3, 256 lógicas)...")
+    df_n3 = censo_completo_matricial(universe_data, 8, 'Code_N3')
+    
+    print("[🧬] Corriendo Censo del Experimento 3  (N=4, 65536 lógicas)...")
+    df_n4 = censo_completo_matricial(universe_data, 16, 'Code_N4')
+
+    # Guardar censos crudos completos para que el colaborador los tenga
+    os.makedirs("data", exist_ok=True)
+    df_n2.to_json("data/censo_completo_n2.json", orient="records", indent=4)
+    df_n3.to_json("data/censo_completo_n3.json", orient="records", indent=4)
+    # El archivo N4 completo puede ser pesado, lo guardamos optimizado
+    df_n4.to_parquet("data/censo_completo_n4.parquet", index=False) if 'parquet' in json.__dict__ else df_n4.to_json("data/censo_completo_n4.json", orient="records")
     
     # -------------------------------------------------------------
-    # TEST 2: EXPERIMENTO 3 (N=4, 65,536 Estrategias)
+    # PASO 3: APLICAR FILTRO GLOBAL AMBICIOSO (Rentables en TODO)
     # -------------------------------------------------------------
-    print("\n" + "="*70)
-    print(" ANALIZANDO EL UNIVERSO DE LA MEMORIA DE 4 DÍAS (65,536 ESTRATEGIAS) ")
-    print("="*70)
-    top_exp3 = run_matrix_tournament(universe_data, num_states=16, code_column='Code_N4')
-    if top_exp3 is not None:
-        print("\n🏆 TOP 5 ESTRATEGIAS GLOBALES - EXPERIMENTO 3:")
-        print(top_exp3.head(5).to_string(index=False, formatters={t: '{:,.2f}%'.format for t in tickers.keys()}))
+    # Una estrategia es ganadora real si supera el 0% en TODOS los activos simultáneamente
+    cond_n2 = np.logical_and.reduce([df_n2[t] > 0 for t in tickers.keys()])
+    cond_n3 = np.logical_and.reduce([df_n3[t] > 0 for t in tickers.keys()])
+    cond_n4 = np.logical_and.reduce([df_n4[t] > 0 for t in tickers.keys()])
+    
+    ganadoras_n2 = df_n2[cond_n2].copy()
+    ganadoras_n3 = df_n3[cond_n3].copy()
+    ganadoras_n4 = df_n4[cond_n4].copy()
+    
+    print(f"\n📈 FILTRO DE CONSISTENCIA GLOBAL:")
+    print(f"  * Estrategias Universales en N=2: {len(ganadoras_n2)} de 16")
+    print(f"  * Estrategias Universales en N=3: {len(ganadoras_n3)} de 256")
+    print(f"  * Estrategias Universales en N=4: {len(ganadoras_n4)} de 65,536")
+
+    # -------------------------------------------------------------
+    # PASO 4: ANÁLISIS DE CONVERGENCIA (PATRONES COINCIDENTES)
+    # -------------------------------------------------------------
+    print("\n🔍 BUSCANDO PATRONES INVARIANTES LIBRES DE OVERFITTING...")
+    print("=" * 80)
+    
+    # Imprimir las mejores absolutas combinadas del experimento 3 para inspección visual
+    ganadoras_n4['Suma'] = ganadoras_n4[list(tickers.keys())].sum(axis=1)
+    top_globales = ganadoras_n4.sort_values(by='Suma', ascending=False).head(5)
+    
+    print("🏆 TOP 5 REGULADORES FINANCIEROS UNIVERSALES (Censo Cruzado N=4):")
+    print("-" * 80)
+    print(top_globales[['Logica'] + list(tickers.keys()) + ['Suma']].to_string(index=False, formatters={t: '{:,.1f}%'.format for t in list(tickers.keys())+['Suma']}))
+    print("=" * 80)
+    
+    # Exportar archivo definitivo de la Élite Consistente Sincronizada
+    top_globales.to_json("data/elite_convergente_universal.json", orient="records", indent=4)
+    print("\n[+] Élite final exportada a 'data/elite_convergente_universal.json'.")
+    print("[*] Listo para ser sincronizado a GitHub.")
 
 if __name__ == "__main__":
     main()
