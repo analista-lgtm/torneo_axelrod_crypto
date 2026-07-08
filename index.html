@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Quant - Axelrod Expanded Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.getbootstrap.com/v3/css/bootstrap.no-icons.mini.css"> <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, 
+        .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, 
+        .dataTables_wrapper .dataTables_paginate { color: #cbd5e1; }
+        table.dataTable tbody tr { background-color: #1e293b; color: #f8fafc; }
+        table.dataTable tbody tr:hover { background-color: #334155; }
+        table.dataTable thead th { background-color: #020617; color: #22c55e; border-bottom: 2px solid #22c55e; }
+        .tab-btn-active { background-color: #22c55e; color: #ffffff; box-shadow: 0 4px 14px rgba(34,197,94,0.4); }
+        .tab-btn-inactive { background-color: #1e293b; color: #94a3b8; }
+        .tab-btn-inactive:hover { background-color: #334155; color: #fff; }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-bold mb-2 text-green-500">Axelrod Crypto Lab - Universo Avanzado</h1>
+        <p class="text-slate-400 mb-6">Laboratorio de simulación cuántica de Teoría de Juegos aplicada a Bitcoin (2021 - 2026)</p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 border-b border-slate-700 pb-5">
+            <button id="btn_2a" onclick="switchExperiment('2a')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
+                Exp 2A: Clásico N=3 (Long/Cash)
+            </button>
+            <button id="btn_2b" onclick="switchExperiment('2b')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
+                Exp 2B: Clásico N=3 (Long/Short)
+            </button>
+            <button id="btn_3a" onclick="switchExperiment('3a')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
+                Exp 3A: Expandido N=4 (Long/Cash)
+            </button>
+            <button id="btn_3b" onclick="switchExperiment('3b')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
+                Exp 3B: Expandido N=4 (Long/Short)
+            </button>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl mb-8 border border-slate-700">
+            <h2 id="chartTitle" class="text-2xl font-semibold mb-4 text-slate-200">Curvas de Rendimiento Absoluto</h2>
+            <canvas id="equityChart" height="110"></canvas>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
+            <h2 class="text-2xl font-semibold mb-4 text-slate-200">Explorador de Estrategias y Métricas de Riesgo</h2>
+            <table id="metricsTable" class="display w-full">
+                <thead>
+                    <tr>
+                        <th>Estrategia</th>
+                        <th>Lógica de Decisión (Binaria)</th>
+                        <th>Retorno Absoluto (%)</th>
+                        <th>Sharpe Ratio</th>
+                        <th>Max Drawdown (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentChart = null;
+        let dataTableInstance = null;
+        const experiments = ['2a', '2b', '3a', '3b'];
+
+        async function switchExperiment(expId) {
+            // 1. Alternar Clases de Botones Dinámicamente
+            experiments.forEach(id => {
+                const btn = document.getElementById(`btn_${id}`);
+                if (id === expId) {
+                    btn.className = "px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-active";
+                } else {
+                    btn.className = "px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive";
+                }
+            });
+
+            // Actualizar Títulos informativos
+            const titles = {
+                '2a': "Evolución del Capital (Top 10 vs Bottom 10) - Clásico N=3 (Long/Cash)",
+                '2b': "Evolución del Capital (Top 10 vs Bottom 10) - Clásico N=3 (Long/Short)",
+                '3a': "Evolución del Capital (Top 10 vs Bottom 10) - Expandido N=4 (Long/Cash) | 65k Muestras",
+                '3b': "Evolución del Capital (Top 10 vs Bottom 10) - Expandido N=4 (Long/Short) | 65k Muestras"
+            };
+            document.getElementById('chartTitle').innerText = titles[expId];
+
+            // 2. Limpieza de Memoria Preventiva para el Navegador
+            if (dataTableInstance) dataTableInstance.destroy();
+            if (currentChart) currentChart.destroy();
+
+            // 3. Obtención asíncrona de los archivos de datos agrupados
+            const metricsRes = await fetch(`./data/metrics_${expId}.json`);
+            const metrics = await metricsRes.json();
+            
+            const equityRes = await fetch(`./data/equity_${expId}.json`);
+            const equityData = await equityRes.json();
+
+            // 4. Renderizado eficiente de Filas de la Tabla
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+            
+            let tableHTML = "";
+            metrics.forEach(m => {
+                tableHTML += `<tr>
+                    <td class="font-bold text-slate-300">${m.Estrategia}</td>
+                    <td class="font-mono text-xs text-slate-400 tracking-tighter break-all">${m.Logica}</td>
+                    <td class="${m.Retorno > 0 ? 'text-green-400' : 'text-red-400'} font-bold">${m.Retorno}%</td>
+                    <td>${m.Sharpe}</td>
+                    <td class="text-red-400">${m.Max_DD}%</td>
+                </tr>`;
+            });
+            tbody.innerHTML = tableHTML;
+
+            // Reinicializar DataTables con ordenación por Retorno por defecto
+            dataTableInstance = $('#metricsTable').DataTable({
+                "order": [[ 2, "desc" ]],
+                "pageLength": 10,
+                "deferRender": true,
+                "destroy": true
+            });
+
+            // 5. Configurar el set de curvas para el gráfico
+            metrics.sort((a, b) => b.Retorno - a.Retorno);
+            const top10 = metrics.slice(0, 10).map(m => m.Estrategia);
+            const bottom10 = metrics.slice(-10).map(m => m.Estrategia);
+            
+            const datasets = [];
+            
+            // Inyectar Bitcoin (Línea amarilla de referencia estática)
+            datasets.push({
+                label: 'Buy & Hold (BTC)',
+                data: equityData.datasets['Buy_and_Hold'],
+                borderColor: '#f59e0b',
+                borderWidth: 4,
+                borderDash: [6, 4],
+                fill: false,
+                order: 0
+            });
+
+            // Inyectar el Top 10 de ganadores (Degradados en Verde Esmeralda)
+            top10.forEach((strat, i) => {
+                if(equityData.datasets[strat]) {
+                    datasets.push({
+                        label: `Top ${i+1}: ${strat}`,
+                        data: equityData.datasets[strat],
+                        borderColor: `rgba(16, 185, 129, ${1 - (i * 0.08)})`,
+                        borderWidth: i === 0 ? 3.5 : 1.5,
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1
+                    });
+                }
+            });
+
+            // Inyectar el Bottom 10 de perdedores (Degradados en Rojo Rubí)
+            bottom10.forEach((strat, i) => {
+                if(equityData.datasets[strat]) {
+                    datasets.push({
+                        label: `Peor ${i+1}: ${strat}`,
+                        data: equityData.datasets[strat],
+                        borderColor: `rgba(239, 68, 68, ${1 - (i * 0.08)})`,
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        fill: false,
+                        order: 2
+                    });
+                }
+            });
+
+            // 6. Construir el objeto gráfico final en el lienzo HTML5
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: equityData.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } }
+                    },
+                    plugins: {
+                        legend: { display: false } // Ocultamos la leyenda para no saturar la pantalla con 21 textos
+                    }
+                }
+            });
+        }
+
+        // Cargar por defecto el experimento clásico base al inicio
+        window.onload = () => switchExperiment('2a');
+    </script>
+</body>
+</html>
