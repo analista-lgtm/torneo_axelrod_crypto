@@ -25,13 +25,18 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Objetivo:** Ejecutar las campeonas de Bitcoin fuera de su muestra (*Out-of-Sample*) en entornos macroeconómicos con densidades y correlaciones totalmente distintas (Ethereum, S&P 500, Oro, Petróleo, DXY).
 * **Descubrimiento Crítico (Veredicto):** Se detectó un **sobreajuste (overfitting) masivo** en las estrategias líderes de rentabilidad absoluta. El rendimiento aislado en un único activo demostró ser el peor indicador de consistencia universal (ej. la líder de BTC destruyó el -79.26% de la cuenta en ETH debido a ligeras desalineaciones en las secuencias de velas diarias).
 
+### 🛰️ Experimento 5: Torneo Multi-Activo Completo (Fase 1 — Completada)
+* **Objetivo:** Abandonar el sesgo de selección: correr los 3 experimentos (N=2, N=3, N=4) de forma independiente sobre **cada** activo del universo (BTC, ETH, SPY, Oro, Petróleo, DXY) con una tubería de datos estandarizada, y auditar el overfitting en ambas direcciones.
+* **Implementación:** `src/data_pipeline.py` (ingesta estándar) + `src/multi_asset_tournament.py` (censo vectorizado, pools anti-overfitting por activo y élite universal). Resultados en `data/multi_activo/` y visualización completa en el dashboard `index.html`.
+* **Resultados Destacados (ventana 2021-07 → 2026-07):**
+  * **Overfitting confirmado a escala:** de las ~10,000-24,000 campeonas locales de cada activo (N=4), sobreviven entre 1 y 32 fuera de casa (>99.8% de tasa de overfitting).
+  * **14 estrategias universales** (N=4) con retorno positivo en los 6 mercados simultáneamente, agrupadas en 5 familias por distancia de Hamming.
+  * **ADN de consenso descubierto:** la élite converge en comprar pánico extremo (estado ▼▼▼▼ → 100% Long), vender el rebote falso (▼▼▼▲ → 100% Short) y surfear la tendencia (▲▲▲▲ → ~93% Long) — la filosofía "quimera" del Experimento 3 emerge de nuevo, pero ahora libre de sobreajuste.
+  * En N=3 existe **una sola estrategia universal** (`10011111`), y su lógica es un sub-patrón exacto del consenso de N=4.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)
-
-### 🛰️ Fase 1: El Buscador Matricial Global (En Desarrollo Actual)
-* **Objetivo:** Abandonar el sesgo de selección. En lugar de validar solo las ganadoras de Bitcoin, ejecutar un algoritmo vectorizado en NumPy para auditar las 65,536 estrategias contra todos los mercados de forma simultánea.
-* **Meta:** Filtrar y aislar las "Ciudadanas del Mundo": estrategias que quizás no ganen 3,000% en un activo, pero que mantengan un Sharpe Ratio positivo y retornos consistentes en **todos** los mercados a la vez.
 
 ### 🧬 Fase 2: Algorítmos Genéticos (Algorítmic Evolution)
 * **Objetivo:** Implementar operadores de cruce (*crossover*), mutación de bits aleatoria y selección natural por torneo.

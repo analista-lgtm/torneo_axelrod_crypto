@@ -1,0 +1,87 @@
+{
+  "generado": "2026-07-09T03:55:59+00:00",
+  "ventana": {
+    "inicio": "2021-07-01",
+    "fin": "2026-07-01"
+  },
+  "modo": "Long/Short (+1/-1) sobre el retorno del día siguiente",
+  "activos": [
+    {
+      "ticker": "BTC-USD",
+      "nombre": "Bitcoin",
+      "tipo": "crypto",
+      "velas": 1822,
+      "fecha_inicio": "2021-07-04",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": 65.95,
+      "ann_factor": 365
+    },
+    {
+      "ticker": "ETH-USD",
+      "nombre": "Ethereum",
+      "tipo": "crypto",
+      "velas": 1822,
+      "fecha_inicio": "2021-07-04",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": -32.4,
+      "ann_factor": 365
+    },
+    {
+      "ticker": "SPY",
+      "nombre": "S&P 500 ETF",
+      "tipo": "tradicional",
+      "velas": 1250,
+      "fecha_inicio": "2021-07-07",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": 83.91,
+      "ann_factor": 252
+    },
+    {
+      "ticker": "GC=F",
+      "nombre": "Oro (Futuros)",
+      "tipo": "tradicional",
+      "velas": 1252,
+      "fecha_inicio": "2021-07-07",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": 123.31,
+      "ann_factor": 252
+    },
+    {
+      "ticker": "CL=F",
+      "nombre": "Petróleo WTI (Futuros)",
+      "tipo": "tradicional",
+      "velas": 1252,
+      "fecha_inicio": "2021-07-07",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": -3.74,
+      "ann_factor": 252
+    },
+    {
+      "ticker": "DX-Y.NYB",
+      "nombre": "Índice Dólar (DXY)",
+      "tipo": "tradicional",
+      "velas": 1252,
+      "fecha_inicio": "2021-07-07",
+      "fecha_fin": "2026-06-29",
+      "bh_retorno": 9.23,
+      "ann_factor": 252
+    }
+  ],
+  "experimentos": {
+    "N2": {
+      "memoria": 2,
+      "estados": 4,
+      "estrategias": 16
+    },
+    "N3": {
+      "memoria": 3,
+      "estados": 8,
+      "estrategias": 256
+    },
+    "N4": {
+      "memoria": 4,
+      "estados": 16,
+      "estrategias": 65536
+    }
+  }
+}

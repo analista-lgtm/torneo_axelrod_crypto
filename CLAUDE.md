@@ -32,7 +32,12 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 1 | `main.py` | Descarga velas diarias de BTC desde Binance | `data/btc_1d_5y.csv` |
 | 2 | `src/tournament.py` | Experimentos 2 y 3: torneo de 256 y 65,536 estrategias sobre BTC | `data/metrics_*.json`, `data/equity_*.json` |
 | 3 | `src/cross_validation.py` | Experimento 4: valida campeonas de BTC en ETH, SPY, Oro, Petróleo, DXY | (solo consola) |
-| 4 | `src/global_quantum_search.py` | Fase actual: censo matricial de todas las estrategias en todos los activos | `data/censo_completo_*.json`, `data/elite_convergente_universal.json` |
+| 4 | `src/global_quantum_search.py` | Censo matricial de todas las estrategias en todos los activos | `data/censo_completo_*.json`, `data/elite_convergente_universal.json` |
+| 5 | `src/multi_asset_tournament.py` | **Experimento 5 (actual)**: torneos N=2/N=3/N=4 por activo + pools anti-overfitting + élite universal con similitud | `data/multi_activo/*.json` |
+
+`src/data_pipeline.py` es la capa estándar de ingesta (Yahoo Finance, misma ventana, misma limpieza y codificación para todos los activos) — cualquier análisis nuevo debe consumir datos a través de ella para mantener la comparabilidad.
+
+**Convención canónica de identidad**: el ADN de una estrategia es la cadena binaria donde la posición `s` es la acción para el estado con código `s` ('1' = Long, '0' = Short); el ID es la lectura decimal del ADN (MSB = estado 0).
 
 Ejecutar los scripts de `src/` **desde la raíz del repo** (usan rutas relativas como `data/...`): `python -m src.tournament` o `python src/cross_validation.py`.
 
