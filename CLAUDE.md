@@ -33,7 +33,8 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 2 | `src/tournament.py` | Experimentos 2 y 3: torneo de 256 y 65,536 estrategias sobre BTC | `data/metrics_*.json`, `data/equity_*.json` |
 | 3 | `src/cross_validation.py` | Experimento 4: valida campeonas de BTC en ETH, SPY, Oro, Petróleo, DXY | (solo consola) |
 | 4 | `src/global_quantum_search.py` | Censo matricial de todas las estrategias en todos los activos | `data/censo_completo_*.json`, `data/elite_convergente_universal.json` |
-| 5 | `src/multi_asset_tournament.py` | **Experimento 5 (actual)**: torneos N=2/N=3/N=4 por activo + pools anti-overfitting + élite universal con similitud | `data/multi_activo/*.json` |
+| 5 | `src/multi_asset_tournament.py` | Experimento 5: torneos N=2/N=3/N=4 por activo en modos LS/LC + pools anti-overfitting + élite universal + comparativo de modos | `data/multi_activo/*.json` |
+| 6 | `src/walk_forward.py` | Experimento 6: validación temporal train (21-24) / test (24-26) con lift vs. azar — **veredicto: overfitting temporal total en la representación actual** | `data/multi_activo/walkforward.json` |
 
 `src/data_pipeline.py` es la capa estándar de ingesta (Yahoo Finance, misma ventana, misma limpieza y codificación para todos los activos) — cualquier análisis nuevo debe consumir datos a través de ella para mantener la comparabilidad.
 

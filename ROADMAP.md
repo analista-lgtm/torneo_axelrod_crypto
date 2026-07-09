@@ -35,13 +35,27 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
   * **ADN de consenso descubierto:** la élite converge en comprar pánico extremo (estado ▼▼▼▼ → 100% Long), vender el rebote falso (▼▼▼▲ → 100% Short) y surfear la tendencia (▲▲▲▲ → ~93% Long) — la filosofía "quimera" del Experimento 3 emerge de nuevo, pero ahora libre de sobreajuste.
   * En N=3 existe **una sola estrategia universal** (`10011111`), y su lógica es un sub-patrón exacto del consenso de N=4.
 
+### ⏳ Experimento 6: Validación Walk-Forward (Overfitting Temporal) — Completada
+* **Objetivo:** La robustez cruzada entre activos (Exp. 5) no garantiza robustez en el tiempo. Se seleccionó la élite universal usando **únicamente** el período train (2021-07 → 2024-06) y se evaluó en el período test (2024-07 → 2026-07), que la selección jamás vio. Métrica clave: el **lift** (tasa de supervivencia de la élite vs. tasa base del azar).
+* **Implementación:** `src/walk_forward.py`, resultados en `data/multi_activo/walkforward.json` y pestaña "⏳ Walk-Forward" del dashboard. Motor verificado (siempre-Long replica el B&H de cada sub-período).
+* **Veredicto (honesto y crítico): OVERFITTING TEMPORAL TOTAL.**
+  * N=4 Long/Short: 371 universales del train → **0** sobreviven el test (tasa base del azar: 0.58%, esperados por suerte: ~2). Lift = 0.
+  * N=4 Long/Cash: 8,627 universales del train → **2** sobreviven (0.02% vs. tasa base 0.86%). Lift = 0.03 — la élite del pasado rinde **peor que elegir estrategias al azar**.
+  * La mediana del peor retorno en test de la élite train (−48.8%) es inferior a la del universo completo (−38.5%): los patrones ganadores de 2021-2024 tienden a *revertirse* en 2024-2026.
+* **Implicación:** las 14 "universales" del Experimento 5 deben considerarse artefactos in-sample de la ventana completa hasta que se demuestre lo contrario. La representación actual (autómata binario de secuencias diarias exactas) captura regímenes, no leyes: es demasiado frágil ante el cambio de régimen. **No avanzar a algoritmos genéticos sobre esta representación** — evolucionarían ruido.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)
 
+### 🧪 Fase 1.5 (nueva, prerrequisito): Representación Robusta del Estado
+* **Motivación:** El Experimento 6 demostró que los estados binarios de secuencias diarias exactas no persisten en el tiempo. Antes de evolucionar nada, hay que encontrar una codificación del mercado cuya élite pase el walk-forward con lift > 3.
+* **Candidatos a explorar:** estados por magnitud y no solo signo (retornos grandes/pequeños), horizontes más largos (semanal), features de régimen (volatilidad, tendencia de medias móviles), y validación walk-forward con múltiples cortes (no uno solo).
+
 ### 🧬 Fase 2: Algorítmos Genéticos (Algorítmic Evolution)
 * **Objetivo:** Implementar operadores de cruce (*crossover*), mutación de bits aleatoria y selección natural por torneo.
 * **Meta:** Dejar que las estrategias evolucionen de forma autónoma generación tras generación, buscando la resiliencia en lugar del sobreajuste lineal.
+* **Condición de entrada (aprendizaje del Exp. 6):** solo sobre una representación que ya haya demostrado persistencia temporal, con fitness walk-forward y un período de test final intocable.
 
 ### 🛡️ Fase 3: Gestión de Riesgo Dinámica (Money Management Layer)
 * **Objetivo:** Sustituir la ejecución binaria agresiva de capital (100% Long / 100% Short) por un algoritmo de asignación proporcional de riesgo como el **Criterio de Kelly** o volatilidad inversa.

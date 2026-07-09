@@ -44,6 +44,7 @@
         <button data-sec="pools" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🛡️ Anti-Overfitting</button>
         <button data-sec="elite" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🧬 Élite Universal</button>
         <button data-sec="comparativa" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⚖️ LS vs LC</button>
+        <button data-sec="walkforward" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⏳ Walk-Forward</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -147,6 +148,29 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN WALK-FORWARD ==================== -->
+    <section id="sec-walkforward" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Prueba de overfitting temporal</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="wf-desc">
+                La élite universal se selecciona usando <b>únicamente el período de entrenamiento</b> y luego se
+                evalúa en el período de test, que la selección jamás vio. El <b>lift</b> compara su tasa de
+                supervivencia contra la tasa base (fracción de <i>todas</i> las estrategias que resulta universal
+                en el test por azar): lift ≈ 1 significa que la élite no supera al azar (overfitting temporal);
+                lift ≫ 1 significa que la selección contiene señal que persiste en el tiempo.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3" id="wf-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="wf-exps"></div>
+        <div id="wf-chips" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4"></div>
+        <div id="wf-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Élite del train evaluada en el test</h2>
+            <p class="text-slate-500 text-xs mb-4">Top 20 estrategias universales del período de entrenamiento, ordenadas por su peor retorno en train, con su desempeño posterior en el período de test.</p>
+            <table id="tabla-wf" class="display w-full"></table>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -226,7 +250,7 @@ async function mostrarSeccion(sec) {
         b.className = `nav-btn px-4 py-2 rounded-xl font-bold text-sm ${b.dataset.sec === sec ? 'nav-active' : 'nav-inactive'}`);
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
-                              elite: initElite, comparativa: initComp, legado: initLegado };
+                              elite: initElite, comparativa: initComp, walkforward: initWF, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -477,6 +501,60 @@ async function pintarComp() {
         { title: 'Peor DD LS (%)', data: r => r.LS.peor_dd, render: fmtPct },
         { title: 'Peor DD LC (%)', data: r => r.LC.peor_dd, render: fmtPct },
     ], d.pareada, 1);
+}
+
+// ---------------------- Walk-Forward ----------------------
+let wfSel = { exp: 'N4', modo: 'LS' };
+async function initWF() {
+    await cargarMeta();
+    botones('wf-modos', itemsModo(), 'modo', id => { wfSel.modo = id; pintarWF(); }, wfSel.modo);
+    botones('wf-exps', itemsExp(), 'nav', id => { wfSel.exp = id; pintarWF(); }, wfSel.exp);
+    await pintarWF();
+}
+async function pintarWF() {
+    const wf = await cargar('data/multi_activo/walkforward.json');
+    const d = wf.resultados[wfSel.exp][wfSel.modo];
+    const tickers = META.activos.map(a => a.ticker);
+    document.getElementById('wf-desc').innerHTML = `
+        La élite universal se selecciona usando <b>únicamente el período de entrenamiento</b>
+        (hasta ${wf.corte}) y luego se evalúa en el período de test (${wf.corte} en adelante),
+        que la selección jamás vio. El <b>lift</b> compara su tasa de supervivencia contra la tasa
+        base (fracción de <i>todas</i> las estrategias que resulta universal en el test por azar):
+        lift ≈ 1 significa que la élite no supera al azar (overfitting temporal); lift ≫ 1 significa
+        que la selección contiene señal que persiste en el tiempo.`;
+    const sinElite = d.train_universales === 0;
+    document.getElementById('wf-chips').innerHTML =
+        chip('Universales en train', fmtNum(d.train_universales), d.train_universales > 0 ? 'pos' : 'neg') +
+        chip('Sobreviven en test', sinElite ? '—' : fmtNum(d.sobreviven), d.sobreviven > 0 ? 'pos' : 'neg') +
+        chip('% supervivencia', sinElite ? '—' : d.pct_supervivencia + '%') +
+        chip('Tasa base (azar)', d.base_rate_test_pct + '%') +
+        chip('LIFT', sinElite || d.lift === null ? '—' : d.lift + '×',
+             d.lift >= 3 ? 'pos' : (d.lift >= 1.5 ? 'text-amber-400' : 'neg'));
+    let veredicto = '';
+    if (sinElite) {
+        veredicto = ['bg-slate-800 border-slate-700', 'Sin élite universal en el período de train para este experimento y modo.'];
+    } else if (d.lift === null) {
+        veredicto = ['bg-amber-900/40 border-amber-700', 'Tasa base cero en el test: no hay referencia de azar para calcular el lift.'];
+    } else if (d.lift >= 3) {
+        veredicto = ['bg-green-900/40 border-green-700',
+            `✅ La élite del train sobrevive el test a <b>${d.lift}×</b> la tasa del azar: hay señal que persiste en el tiempo. Mediana del peor retorno en test: élite ${d.mediana_min_test_elite}% vs ${d.mediana_min_test_todas}% del universo completo.`];
+    } else if (d.lift >= 1.5) {
+        veredicto = ['bg-amber-900/40 border-amber-700',
+            `⚠️ Señal débil: la élite supera al azar (${d.lift}×) pero sin margen contundente. Interpretar con cautela.`];
+    } else {
+        veredicto = ['bg-red-900/40 border-red-700',
+            `❌ Overfitting temporal: la élite del train no sobrevive el test mejor que el azar (${d.lift}×).`];
+    }
+    document.getElementById('wf-veredicto').innerHTML =
+        `<div class="${veredicto[0]} border rounded-xl p-4 text-sm">${veredicto[1]}</div>`;
+    tablaDT('#tabla-wf', [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        { title: 'Peor ret. train (%)', data: 'min_train', render: fmtPct },
+        { title: 'Peor ret. test (%)', data: 'min_test', render: fmtPct },
+        { title: '¿Sobrevive?', data: 'sobrevive', render: v => v
+            ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
+        ...tickers.map(t => ({ title: `${nombreDe(t)} test (%)`, data: r => r.retornos_test[t], render: fmtPct })),
+    ], d.top, 1);
 }
 
 // ---------------------- BTC legado ----------------------
