@@ -107,6 +107,17 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Veredicto: la diversificación funciona — el óptimo es interior, no un extremo.** La mezcla 25/75 logra el mejor Sharpe (1.09) y la 50/50 recorta el drawdown de −27.5% a −17.4% manteniendo Sharpe superior al B&H puro. Añadir el trend-following al portafolio pasivo mejora el riesgo-ajuste aunque el TSMOM aislado rinda menos: exactamente lo que predice la teoría de portafolios con correlación 0.41.
 * **Estado del proyecto:** la línea de investigación queda madura y con conclusión práctica accionable. Extensiones futuras: rebalanceo mensual con bandas, replicación independiente externa (en curso con LLM auditor), y actualización periódica de datos.
 
+### 🛠️ Experimento 15: Implementabilidad y Robustez — Completado ⭐ (aprueba el sagrado)
+* **Objetivo:** las cuatro preguntas que separan un backtest bonito de algo operable, aplicadas al portafolio institucional del Exp. 14.
+* **Implementación:** `src/implementation_check.py`, resultados en `data/multi_activo/implementacion.json`, panel integrado en la pestaña "🏦 Institucional".
+* **Resultados:**
+  1. **Robustez del peso:** Sharpe(w) es una **meseta** (w ∈ [10%, 55%] queda a ≤0.05 del máximo), no un pico frágil. El w* elegido **solo con la ventana de selección** (sin mirar el futuro) es 40% TSMOM.
+  2. **⭐ Examen sagrado aprobado:** la mezcla 40/60 con peso elegido honestamente rindió **+14.7% con Sharpe 1.20 y drawdown de solo −6.0%** en los 12 meses que ninguna decisión tocó — el primer constructo del laboratorio que pasa el examen final con nota.
+  3. **Rebalanceo realista:** mensual o trimestral pierde ~0.01 de Sharpe frente al diario (1.08-1.09 en todos los casos) — totalmente implementable en la práctica.
+  4. **Crisis alpha medido:** en los 13 peores meses del B&H (promedio −5.1%), el TSMOM promedió **+0.25%** y la mezcla amortiguó la pérdida a −3.0% (42% menos dolor).
+  5. **Colas sanas:** Sortino 1.94, asimetría **positiva** (+3.4, cola derecha), peor mes −7.7%, 61% de meses positivos.
+* **Estado:** la línea TSMOM + B&H queda validada de punta a punta: significancia estadística tras costos (Exp. 13), óptimo de mezcla interior (Exp. 14), robustez paramétrica, implementabilidad práctica y aprobación del período sagrado (Exp. 15). Pendiente: la replicación independiente externa (en curso) como sello final.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)

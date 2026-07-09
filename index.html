@@ -337,9 +337,30 @@
             <h2 class="text-xl font-semibold mb-1 text-slate-200">La frontera de mezclas (2015-2026)</h2>
             <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-inst"></table>
         </div>
-        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
             <h2 class="text-xl font-semibold mb-1 text-slate-200">Equity mensual (capital inicial = 1)</h2>
             <canvas id="chart-inst" height="110"></canvas>
+        </div>
+        <div id="panel-impl" class="hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-slate-200 mt-2">Experimento 15: implementabilidad y robustez</h2>
+            <div id="impl-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-1 text-slate-200">Sharpe según el peso en TSMOM</h3>
+                    <p class="text-slate-500 text-xs mb-3">Si es una meseta, el óptimo es robusto; si es un pico, es frágil. La línea punteada usa solo la ventana de selección (elección honesta del peso).</p>
+                    <canvas id="chart-impl-grid" height="150"></canvas>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-1 text-slate-200">Crisis alpha y colas</h3>
+                    <p class="text-slate-500 text-xs mb-3">Comportamiento en el peor decil de meses del B&amp;H diversificado, y métricas de cola de la mezcla.</p>
+                    <div id="impl-crisis" class="text-sm space-y-2"></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">¿Y si no rebalanceo a diario?</h3>
+                <p class="text-slate-500 text-xs mb-3">La mezcla con el peso elegido honestamente, rebalanceada entre sleeves a distintas frecuencias.</p>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-impl-reb"></table>
+            </div>
         </div>
     </section>
 
@@ -1145,6 +1166,7 @@ async function pintarMeta() {
 // ---------------------- Institucional (Exp. 14) ----------------------
 let chartInst = null;
 async function initInst() {
+    pintarImpl();
     const d = await cargar('data/multi_activo/institucional.json');
     const mejor = d.mezclas.find(m => m.etiqueta === d.mejor_sharpe);
     const puro_bh = d.mezclas.find(m => m.pct_tsmom === 0);
@@ -1189,6 +1211,61 @@ async function initInst() {
             plugins: { legend: { labels: { color: '#cbd5e1' } } },
             scales: {
                 x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Implementabilidad (Exp. 15, dentro de 🏦) ----------------------
+let chartImplGrid = null;
+async function pintarImpl() {
+    const panel = document.getElementById('panel-impl');
+    let d;
+    try { d = await cargar('data/multi_activo/implementacion.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    const s = d.sagrado_con_w_optimo;
+    document.getElementById('impl-chips').innerHTML =
+        chip('w* elegido solo con selección', `${(d.w_optimo_seleccion * 100).toFixed(0)}% TSMOM`) +
+        chip('Meseta robusta de Sharpe', `${(d.meseta.desde * 100).toFixed(0)}% – ${(d.meseta.hasta * 100).toFixed(0)}%`, 'pos') +
+        chip('Sagrado con w* honesto', `${s.retorno}% · Sharpe ${s.sharpe} · DD ${s.max_dd}%`,
+             s.retorno > 0 ? 'pos' : 'neg') +
+        chip('% meses positivos', d.colas.pct_meses_positivos + '%',
+             d.colas.pct_meses_positivos >= 60 ? 'pos' : 'text-amber-400');
+
+    document.getElementById('impl-crisis').innerHTML = `
+        <div class="bg-slate-900 rounded-xl p-3">En los <b>${d.crisis.num_meses_crisis} peores meses</b> del B&H
+            (retorno ≤ ${d.crisis.umbral_decil_pct}%): B&H promedio ${fmtPct(d.crisis.bh_prom_pct)},
+            TSMOM ${fmtPct(d.crisis.tsmom_prom_pct)}, <b>mezcla ${fmtPct(d.crisis.mezcla_prom_pct)}</b>.</div>
+        <div class="bg-slate-900 rounded-xl p-3">Colas de la mezcla: Sortino <b>${d.colas.sortino}</b> ·
+            peor mes ${fmtPct(d.colas.peor_mes_pct)} · peor trimestre ${fmtPct(d.colas.peor_trimestre_pct)} ·
+            asimetría ${d.colas.asimetria}.</div>`;
+
+    document.getElementById('tabla-impl-reb').innerHTML = `
+        <thead><tr><th>Frecuencia de rebalanceo</th><th>Retorno total</th><th>Sharpe</th>
+        <th>Max DD</th><th>t-stat</th></tr></thead>
+        <tbody>${Object.entries(d.rebalanceo).map(([f, r]) => `
+            <tr><td class="font-bold">${f}</td><td>${fmtPct(r.retorno)}</td><td>${r.sharpe}</td>
+            <td>${fmtPct(r.max_dd)}</td><td>${r.t_stat}</td></tr>`).join('')}</tbody>`;
+
+    if (chartImplGrid) chartImplGrid.destroy();
+    chartImplGrid = new Chart(document.getElementById('chart-impl-grid'), {
+        type: 'line',
+        data: {
+            labels: d.grid.pesos.map(w => (w * 100).toFixed(0) + '%'),
+            datasets: [
+                { label: 'Sharpe (ventana completa)', data: d.grid.sharpe_total,
+                  borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 2, tension: 0.3 },
+                { label: 'Sharpe (solo selección)', data: d.grid.sharpe_seleccion,
+                  borderColor: '#0ea5e9', borderWidth: 2, borderDash: [6, 4], pointRadius: 2, tension: 0.3 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { title: { display: true, text: '% del portafolio en TSMOM', color: '#64748b' },
+                     ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
                 y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
             },
         },
