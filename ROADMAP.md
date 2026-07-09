@@ -84,6 +84,16 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Cautelas honestas:** (1) el CI95 bootstrap del Sharpe roza el cero ([−0.07, 1.44]) — evidencia moderada, no prueba; (2) ventana de 5 años es corta para una ventaja débil (la literatura usa 50+ años); (3) sin costos de transacción, aunque TSMOM-252 rota poco (pocas señales por año y mercado), el impacto sería menor; (4) el período sagrado quedó plano (−0.01%) — 2026 fue un mal semestre para tendencia (−14%), coherente con el carácter intermitente de la anomalía.
 * **Por qué este resultado es creíble donde los anteriores no:** una sola hipótesis primaria declarada antes de mirar los datos, con 50 años de literatura detrás, sin ningún proceso de selección — el p-valor significa lo que dice. La campaña completa (Exps. 5-12) cuenta ahora una historia coherente: no hay reglas mágicas individuales, pero sí una prima débil de tendencia, cosechable únicamente vía diversificación masiva y paciencia.
 
+### 🌐 Experimento 13: Meta-Portafolio v2 (extendido) — Completado ⭐⭐
+* **Objetivo:** someter la señal del Exp. 12 a las cuatro pruebas que la refuerzan o la refutan: el doble de historia (2015-2026), más diversificación (18 mercados: se añaden cobre, maíz, gas natural, EFA, Russell 2000, EUR/USD y DAX), **costos explícitos** (10 pb por rotación) y **vol-targeting** al 10% anual (causal, tope 2x).
+* **Implementación:** `src/meta_portfolio_v2.py`, resultados en `data/multi_activo/meta_portafolio_v2.json`, selector de versión en la pestaña "🌐 Meta-Portafolio".
+* **Resultado: LA EVIDENCIA SE FORTALECE DECISIVAMENTE (ya con costos):**
+  * **TSMOM-252 (primaria): +292.1%, Sharpe 0.78, Max DD −21.1%, t-stat 3.10, p(boot) = 0.0005, Sharpe CI95 [0.32, 1.26]** — el intervalo de confianza ya **excluye el cero**.
+  * **TSMOM-126 (p=0.0035) y SMA 50/200 (p=0.0005) también sobreviven Bonferroni** (α=0.0125): es la *familia* de tendencia la que es robusta, no una parametrización afortunada. Donchian-100 no pasa (p=0.0645).
+  * **Ensamble (voto): Sharpe 0.78 con el menor drawdown de todos (−15.5%)** — la combinación de señales suaviza sin sacrificar retorno.
+* **Lectura honesta:** el B&H diversificado con vol-target rindió más en esta década alcista (+518%, Sharpe 1.02). El valor del trend-following no es "ganarle al B&H en mercados alcistas" sino: drawdown estructuralmente menor, ganancias en años bajistas (2022) y baja correlación — es un **diversificador con ventaja propia estadísticamente robusta**, no un reemplazo del mercado. El período sagrado reciente sigue flojo (+1.2%), coherente con la intermitencia de la anomalía.
+* **Estado de la línea:** con p=0.0005 tras costos y 11 años, la prima de tendencia diversificada queda establecida como el primer (y único) hallazgo positivo validado del laboratorio. Extensiones posibles: allocation combinada TSMOM + B&H (el "portafolio institucional"), rebalanceo mensual, y datos aún más largos por mercado.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)

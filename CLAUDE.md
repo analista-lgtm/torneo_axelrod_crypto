@@ -41,6 +41,7 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 10 | `src/portfolio_survivors.py` | Experimento 10: doble pista (universales + especialistas por mercado) con **período sagrado** (últimos 12 meses intocados) — el portafolio de supervivientes **falla el examen sagrado** (−1.7% vs +18.5% B&H); cierre del arco: los autómatas fijos no contienen ventaja explotable | `data/multi_activo/portafolio.json` |
 | 11 | `src/classic_lab.py` | Experimento 11: 28 estrategias clásicas (`src/classic_strategies.py`: TSMOM, SMAs, Donchian, RSI) ante el tribunal — 0 universales, 2 especialistas marginales, portafolio plano en el sagrado. Lección: las ventajas reales son débiles y requieren tests agregados, no supervivencia segmento a segmento | `data/multi_activo/clasicas.json` |
 | 12 | `src/meta_portfolio.py` | Experimento 12 ⭐: TSMOM-252 pre-registrado, diversificado en 11 mercados con paridad de riesgo — **primera señal significativa** (Sharpe 0.67, t-stat 1.78, p=0.0355, DD un tercio menor que B&H); secundarias no pasan Bonferroni | `data/multi_activo/meta_portafolio.json` |
+| 13 | `src/meta_portfolio_v2.py` | Experimento 13 ⭐⭐: v2 con 2015-2026, 18 mercados, costos 10 pb y vol-target 10% — TSMOM-252: t-stat 3.10, **p=0.0005, Sharpe CI95 [0.32, 1.26] excluye el cero**; TSMOM-126 y SMA 50/200 también pasan Bonferroni; el ensamble logra el menor DD (−15.5%) | `data/multi_activo/meta_portafolio_v2.json` |
 
 La historia narrativa completa del laboratorio está en `BITACORA.md`; el resumen público en `README.md`.
 

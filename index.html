@@ -302,6 +302,7 @@
                 de Bonferroni.
             </p>
         </div>
+        <div class="flex flex-wrap gap-2 mb-6" id="meta-versiones"></div>
         <div id="meta-veredicto" class="mb-6"></div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
             <h2 class="text-xl font-semibold mb-1 text-slate-200">Inferencia estadística por variante</h2>
@@ -1021,8 +1022,23 @@ async function initClasicas() {
 
 // ---------------------- Meta-Portafolio (Exp. 12) ----------------------
 let chartMeta = null;
+const META_VERSIONES = {
+    v1: { texto: 'Exp. 12 · 2021-2026 · 11 mercados · sin costos', archivo: 'data/multi_activo/meta_portafolio.json' },
+    v2: { texto: 'Exp. 13 · 2015-2026 · ~18 mercados · costos + vol-target', archivo: 'data/multi_activo/meta_portafolio_v2.json' },
+};
+let metaVer = 'v2';
 async function initMeta() {
-    const d = await cargar('data/multi_activo/meta_portafolio.json');
+    botones('meta-versiones', Object.entries(META_VERSIONES).map(([id, v]) => ({id, texto: v.texto})), 'modo',
+        id => { metaVer = id; pintarMeta(); }, metaVer);
+    await pintarMeta();
+}
+async function pintarMeta() {
+    let d;
+    try { d = await cargar(META_VERSIONES[metaVer].archivo); }
+    catch (e) {
+        if (metaVer === 'v2') { metaVer = 'v1'; d = await cargar(META_VERSIONES.v1.archivo); }
+        else throw e;
+    }
     const primaria = 'TSMOM-252 (primaria)';
     const p = d.variantes[primaria];
 
