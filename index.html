@@ -23,14 +23,19 @@
         .pill-active { background-color: #0ea5e9; color: #fff; }
         .pill-inactive { background-color: #1e293b; color: #94a3b8; }
         .pill-inactive:hover { background-color: #334155; color: #fff; }
+        .modo-active { background-color: #a855f7; color: #fff; }
+        .modo-inactive { background-color: #1e293b; color: #94a3b8; }
+        .modo-inactive:hover { background-color: #334155; color: #fff; }
         .adn { font-family: monospace; letter-spacing: 1px; }
         .pos { color: #22c55e; } .neg { color: #ef4444; }
+        .tabla-comp th { background-color: #020617; color: #22c55e; padding: 8px 12px; text-align: left; white-space: nowrap; }
+        .tabla-comp td { background-color: #1e293b; padding: 8px 12px; border-top: 1px solid #0f172a; white-space: nowrap; }
     </style>
 </head>
 <body class="p-6">
 <div class="max-w-7xl mx-auto">
     <h1 class="text-4xl font-bold mb-1 text-green-500">Axelrod Quant Lab</h1>
-    <p class="text-slate-400 mb-6" id="subtitulo">Torneo evolutivo multi-activo: censo total de estrategias, auditoría anti-overfitting y convergencia universal.</p>
+    <p class="text-slate-400 mb-6">Torneo evolutivo multi-activo: censo total de estrategias en modos Long/Short y Long/Cash, auditoría anti-overfitting y convergencia universal.</p>
 
     <!-- Navegación principal -->
     <div class="flex flex-wrap gap-2 mb-8 border-b border-slate-700 pb-4">
@@ -38,6 +43,7 @@
         <button data-sec="torneos" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏟️ Torneos por Activo</button>
         <button data-sec="pools" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🛡️ Anti-Overfitting</button>
         <button data-sec="elite" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🧬 Élite Universal</button>
+        <button data-sec="comparativa" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⚖️ LS vs LC</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -49,7 +55,8 @@
                 Cada activo pasa por la <b>misma tubería estándar de datos</b> (fuente Yahoo Finance, misma ventana temporal,
                 misma limpieza y codificación de estados) para garantizar comparabilidad. El mercado se codifica como memoria
                 binaria de N días (subió = 1, bajó = 0) y se hace competir a <b>todas</b> las estrategias posibles
-                (N=2 → 16, N=3 → 256, N=4 → 65,536) en modo Long/Short sobre el retorno del día siguiente.
+                (N=2 → 16, N=3 → 256, N=4 → 65,536) en dos modos: <b>Long/Short</b> (bit 0 = posición corta) y
+                <b>Long/Cash</b> (bit 0 = fuera del mercado), siempre sobre el retorno del día siguiente.
                 El Sharpe se anualiza con 365 días para cripto y 252 para mercados tradicionales.
             </p>
             <p class="text-slate-500 text-xs mt-2" id="meta-info"></p>
@@ -59,7 +66,8 @@
 
     <!-- ==================== SECCIÓN TORNEOS ==================== -->
     <section id="sec-torneos" class="seccion hidden">
-        <div class="flex flex-wrap gap-2 mb-4" id="torneo-activos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="torneo-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="torneo-activos"></div>
         <div class="flex flex-wrap gap-2 mb-6" id="torneo-exps"></div>
         <div id="torneo-chips" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
@@ -71,7 +79,8 @@
 
     <!-- ==================== SECCIÓN POOLS ==================== -->
     <section id="sec-pools" class="seccion hidden">
-        <div class="flex flex-wrap gap-2 mb-4" id="pool-activos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="pool-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="pool-activos"></div>
         <div class="flex flex-wrap gap-2 mb-6" id="pool-exps"></div>
         <div id="pool-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
@@ -83,6 +92,7 @@
 
     <!-- ==================== SECCIÓN ÉLITE ==================== -->
     <section id="sec-elite" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-3" id="elite-modos"></div>
         <div class="flex flex-wrap gap-2 mb-6" id="elite-exps"></div>
         <div id="elite-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6"></div>
 
@@ -95,7 +105,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
                 <h2 class="text-xl font-semibold mb-1 text-slate-200">ADN de consenso</h2>
-                <p class="text-slate-500 text-xs mb-4">Para cada estado de mercado (secuencia de días: ▲ subió, ▼ bajó; el día más reciente a la derecha), porcentaje de la élite que responde con posición Long.</p>
+                <p class="text-slate-500 text-xs mb-4" id="consenso-desc"></p>
                 <div id="consenso-viz" class="space-y-2"></div>
             </div>
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
@@ -116,6 +126,24 @@
             <h2 class="text-xl font-semibold mb-1 text-slate-200">Casi universales</h2>
             <p class="text-slate-500 text-xs mb-4">Positivas en todos los activos menos uno: útiles para diagnosticar qué mercado rompe la generalización.</p>
             <table id="tabla-casi" class="display w-full"></table>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN COMPARATIVA ==================== -->
+    <section id="sec-comparativa" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-6" id="comp-exps"></div>
+        <div id="comp-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Distribuciones por activo: Long/Short → Long/Cash</h2>
+            <p class="text-slate-500 text-xs mb-4">Cada celda muestra el valor del censo completo en modo Long/Short, la flecha, y el valor en Long/Cash. Verde = Long/Cash mejora esa métrica; rojo = la empeora.</p>
+            <table class="tabla-comp w-full rounded-xl overflow-hidden text-sm" id="tabla-comp-activos"></table>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Élite pareada: el mismo ADN en ambos modos</h2>
+            <p class="text-slate-500 text-xs mb-4">Las mejores estrategias universales del modo Long/Short, re-ejecutadas con el mismo ADN en Long/Cash. Métricas agregadas sobre los 6 activos: peor retorno, Sharpe promedio y peor drawdown.</p>
+            <table id="tabla-pareada" class="display w-full"></table>
         </div>
     </section>
 
@@ -152,7 +180,9 @@ const flechas = patron => [...patron].map(b => b === '1'
 const adnHtml = adn => `<span class="adn">${adn}</span>`;
 
 const EXPS = { N2: 'N=2 (16 estrategias)', N3: 'N=3 (256 estrategias)', N4: 'N=4 (65,536 estrategias)' };
-let META = null;              // resumen.json
+const MODOS = { LS: 'Long/Short', LC: 'Long/Cash' };
+const ACCION_CERO = { LS: 'Short', LC: 'Cash' };
+let META = null;
 let nombreDe = t => t;
 
 function chip(titulo, valor, color = 'text-slate-100') {
@@ -161,13 +191,14 @@ function chip(titulo, valor, color = 'text-slate-100') {
         <div class="text-xl font-bold ${color}">${valor}</div></div>`;
 }
 
-function botones(contId, items, claseSel, alPulsar) {
+function botones(contId, items, claseSel, alPulsar, activo = null) {
     const cont = document.getElementById(contId);
     cont.innerHTML = '';
     items.forEach(({id, texto}, idx) => {
+        const esActivo = activo === null ? idx === 0 : id === activo;
         const b = document.createElement('button');
         b.textContent = texto;
-        b.className = `px-3 py-2 rounded-lg font-semibold text-xs ${idx === 0 ? claseSel + '-active' : claseSel + '-inactive'}`;
+        b.className = `px-3 py-2 rounded-lg font-semibold text-xs ${esActivo ? claseSel + '-active' : claseSel + '-inactive'}`;
         b.onclick = () => {
             cont.querySelectorAll('button').forEach(x => x.className = x.className.replace(claseSel + '-active', claseSel + '-inactive'));
             b.className = b.className.replace(claseSel + '-inactive', claseSel + '-active');
@@ -194,7 +225,8 @@ async function mostrarSeccion(sec) {
     document.querySelectorAll('.nav-btn').forEach(b =>
         b.className = `nav-btn px-4 py-2 rounded-xl font-bold text-sm ${b.dataset.sec === sec ? 'nav-active' : 'nav-inactive'}`);
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
-    const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools, elite: initElite, legado: initLegado };
+    const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
+                              elite: initElite, comparativa: initComp, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -212,11 +244,14 @@ async function cargarMeta() {
     return META;
 }
 
+const itemsModo = () => Object.entries(MODOS).map(([id, texto]) => ({id, texto}));
+const itemsExp = () => ['N4', 'N3', 'N2'].map(e => ({id: e, texto: EXPS[e]}));
+
 // ---------------------- Resumen ----------------------
 async function initResumen() {
     const m = await cargarMeta();
     document.getElementById('meta-info').textContent =
-        `Ventana de análisis: ${m.ventana.inicio} → ${m.ventana.fin} · Modo: ${m.modo} · Generado: ${m.generado}`;
+        `Ventana de análisis: ${m.ventana.inicio} → ${m.ventana.fin} · Generado: ${m.generado}`;
     document.getElementById('cards-activos').innerHTML = m.activos.map(a => `
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5">
             <div class="flex justify-between items-baseline mb-1">
@@ -231,24 +266,23 @@ async function initResumen() {
 }
 
 // ---------------------- Torneos por activo ----------------------
-let torneoSel = { activo: null, exp: 'N4' };
+let torneoSel = { activo: null, exp: 'N4', modo: 'LS' };
 async function initTorneos() {
     const m = await cargarMeta();
     if (!torneoSel.activo) torneoSel.activo = m.activos[0].ticker;
+    botones('torneo-modos', itemsModo(), 'modo', id => { torneoSel.modo = id; pintarTorneo(); }, torneoSel.modo);
     botones('torneo-activos', m.activos.map(a => ({id: a.ticker, texto: a.nombre})), 'pill',
-        id => { torneoSel.activo = id; pintarTorneo(); });
-    botones('torneo-exps', [['N4'], ['N3'], ['N2']].map(([e]) => ({id: e, texto: EXPS[e]})), 'nav',
-        id => { torneoSel.exp = id; pintarTorneo(); });
-    torneoSel = { activo: m.activos[0].ticker, exp: 'N4' };
+        id => { torneoSel.activo = id; pintarTorneo(); }, torneoSel.activo);
+    botones('torneo-exps', itemsExp(), 'nav', id => { torneoSel.exp = id; pintarTorneo(); }, torneoSel.exp);
     await pintarTorneo();
 }
 async function pintarTorneo() {
-    const datos = await cargar(`data/multi_activo/torneo_${torneoSel.exp}.json`);
+    const datos = await cargar(`data/multi_activo/torneo_${torneoSel.exp}_${torneoSel.modo}.json`);
     const d = datos[torneoSel.activo];
     if (!d) return;
     const r = d.resumen;
     document.getElementById('torneo-titulo').textContent =
-        `${nombreDe(torneoSel.activo)} — ${EXPS[torneoSel.exp]}`;
+        `${nombreDe(torneoSel.activo)} — ${EXPS[torneoSel.exp]} — ${MODOS[torneoSel.modo]}`;
     document.getElementById('torneo-chips').innerHTML =
         chip('Estrategias', fmtNum(r.total)) +
         chip('Positivas', `${fmtNum(r.positivas)} (${r.pct_positivas}%)`, r.pct_positivas >= 50 ? 'pos' : 'neg') +
@@ -265,22 +299,22 @@ async function pintarTorneo() {
 }
 
 // ---------------------- Pools anti-overfitting ----------------------
-let poolSel = { activo: null, exp: 'N4' };
+let poolSel = { activo: null, exp: 'N4', modo: 'LS' };
 async function initPools() {
     const m = await cargarMeta();
+    if (!poolSel.activo) poolSel.activo = m.activos[0].ticker;
+    botones('pool-modos', itemsModo(), 'modo', id => { poolSel.modo = id; pintarPool(); }, poolSel.modo);
     botones('pool-activos', m.activos.map(a => ({id: a.ticker, texto: a.nombre})), 'pill',
-        id => { poolSel.activo = id; pintarPool(); });
-    botones('pool-exps', [['N4'], ['N3'], ['N2']].map(([e]) => ({id: e, texto: EXPS[e]})), 'nav',
-        id => { poolSel.exp = id; pintarPool(); });
-    poolSel = { activo: m.activos[0].ticker, exp: 'N4' };
+        id => { poolSel.activo = id; pintarPool(); }, poolSel.activo);
+    botones('pool-exps', itemsExp(), 'nav', id => { poolSel.exp = id; pintarPool(); }, poolSel.exp);
     await pintarPool();
 }
 async function pintarPool() {
-    const datos = await cargar(`data/multi_activo/pools_${poolSel.exp}.json`);
+    const datos = await cargar(`data/multi_activo/pools_${poolSel.exp}_${poolSel.modo}.json`);
     const d = datos[poolSel.activo];
     if (!d) return;
     document.getElementById('pool-titulo').textContent =
-        `Pool robusto de ${nombreDe(poolSel.activo)} — ${EXPS[poolSel.exp]}`;
+        `Pool robusto de ${nombreDe(poolSel.activo)} — ${EXPS[poolSel.exp]} — ${MODOS[poolSel.modo]}`;
     document.getElementById('pool-criterio').textContent = `Criterio: ${d.criterio}.`;
     document.getElementById('pool-chips').innerHTML =
         chip('Campeonas locales', fmtNum(d.campeonas_locales)) +
@@ -301,19 +335,23 @@ async function pintarPool() {
 }
 
 // ---------------------- Élite universal ----------------------
-let eliteSel = { exp: 'N4', equityActivo: null };
+let eliteSel = { exp: 'N4', modo: 'LS' };
 let chartElite = null;
 async function initElite() {
     await cargarMeta();
-    botones('elite-exps', [['N4'], ['N3'], ['N2']].map(([e]) => ({id: e, texto: EXPS[e]})), 'nav',
-        id => { eliteSel.exp = id; pintarElite(); });
-    eliteSel.exp = 'N4';
+    botones('elite-modos', itemsModo(), 'modo', id => { eliteSel.modo = id; pintarElite(); }, eliteSel.modo);
+    botones('elite-exps', itemsExp(), 'nav', id => { eliteSel.exp = id; pintarElite(); }, eliteSel.exp);
     await pintarElite();
 }
 async function pintarElite() {
-    const d = await cargar(`data/multi_activo/elite_${eliteSel.exp}.json`);
+    const d = await cargar(`data/multi_activo/elite_${eliteSel.exp}_${eliteSel.modo}.json`);
     const tickers = META.activos.map(a => a.ticker);
-    document.getElementById('elite-criterio').textContent = `Criterio: ${d.criterio}.`;
+    const accion0 = ACCION_CERO[eliteSel.modo];
+    document.getElementById('elite-criterio').textContent =
+        `Modo ${MODOS[eliteSel.modo]} · Criterio: ${d.criterio}.`;
+    document.getElementById('consenso-desc').innerHTML =
+        `Para cada estado de mercado (secuencia de días: ▲ subió, ▼ bajó; el día más reciente a la derecha),
+         porcentaje de la élite que responde con posición Long (verde) o ${accion0} (rojo).`;
     document.getElementById('elite-chips').innerHTML =
         chip('Universales', fmtNum(d.num_universales), d.num_universales > 0 ? 'pos' : 'neg') +
         chip('Casi universales (falla 1)', fmtNum(d.num_casi_universales), 'text-amber-400') +
@@ -336,7 +374,7 @@ async function pintarElite() {
                 <div class="flex-1 bg-slate-900 rounded h-4 overflow-hidden">
                     <div class="h-4 ${c.pct_long >= 50 ? 'bg-green-500' : 'bg-red-500'}" style="width:${Math.max(c.pct_long, 100 - c.pct_long)}%"></div>
                 </div>
-                <span class="w-36 text-xs text-slate-400">${c.pct_long >= 50 ? c.pct_long + '% Long' : (100 - c.pct_long).toFixed(1) + '% Short'}</span>
+                <span class="w-36 text-xs text-slate-400">${c.pct_long >= 50 ? c.pct_long + '% Long' : (100 - c.pct_long).toFixed(1) + '% ' + accion0}</span>
             </div>`).join('');
 
     // Familias
@@ -355,15 +393,18 @@ async function pintarElite() {
         { title: 'Activo que falla', data: 'falla', render: t => nombreDe(t) },
     ], d.casi_universales, 1);
 
-    // Curvas de equity: solo existen para N=4
+    // Curvas de equity: solo existen para N=4 y si hubo élite en el modo
     const panel = document.getElementById('panel-equity-elite');
-    if (eliteSel.exp !== 'N4') { panel.classList.add('hidden'); return; }
-    panel.classList.remove('hidden');
-    const eq = await cargar('data/multi_activo/equity_elite.json');
-    const activos = Object.keys(eq.curvas);
-    botones('equity-activos', activos.map(t => ({id: t, texto: nombreDe(t)})), 'pill',
-        id => pintarEquityElite(eq, id));
-    pintarEquityElite(eq, activos[0]);
+    panel.classList.add('hidden');
+    if (eliteSel.exp !== 'N4' || d.num_universales === 0) return;
+    try {
+        const eq = await cargar(`data/multi_activo/equity_elite_${eliteSel.modo}.json`);
+        panel.classList.remove('hidden');
+        const activos = Object.keys(eq.curvas);
+        botones('equity-activos', activos.map(t => ({id: t, texto: nombreDe(t)})), 'pill',
+            id => pintarEquityElite(eq, id));
+        pintarEquityElite(eq, activos[0]);
+    } catch (e) { /* sin curvas para este modo */ }
 }
 function pintarEquityElite(eq, ticker) {
     const paleta = ['#94a3b8', '#22c55e', '#0ea5e9', '#eab308', '#f472b6', '#a78bfa'];
@@ -387,6 +428,55 @@ function pintarEquityElite(eq, ticker) {
             },
         },
     });
+}
+
+// ---------------------- Comparativa LS vs LC ----------------------
+let compSel = { exp: 'N4' };
+async function initComp() {
+    await cargarMeta();
+    botones('comp-exps', itemsExp(), 'nav', id => { compSel.exp = id; pintarComp(); }, compSel.exp);
+    await pintarComp();
+}
+function celdaComp(ls, lc, mayorEsMejor = true) {
+    const mejora = mayorEsMejor ? lc > ls : lc < ls;
+    const igual = lc === ls;
+    const color = igual ? 'text-slate-400' : (mejora ? 'pos' : 'neg');
+    return `<td><span class="text-slate-400">${Number(ls).toLocaleString('es')}</span>
+            <span class="${color}"> → ${Number(lc).toLocaleString('es')}</span></td>`;
+}
+async function pintarComp() {
+    const d = await cargar(`data/multi_activo/comparativo_${compSel.exp}.json`);
+    document.getElementById('comp-chips').innerHTML =
+        chip('Experimento', EXPS[compSel.exp]) +
+        chip('Élite universal LS', fmtNum(d.elite.LS), d.elite.LS > 0 ? 'pos' : 'neg') +
+        chip('Élite universal LC', fmtNum(d.elite.LC), d.elite.LC > 0 ? 'pos' : 'neg') +
+        chip('Cambio en la élite', (d.elite.LC - d.elite.LS >= 0 ? '+' : '') + fmtNum(d.elite.LC - d.elite.LS),
+             d.elite.LC >= d.elite.LS ? 'pos' : 'neg');
+
+    const filas = Object.entries(d.activos).map(([t, m]) => `
+        <tr>
+            <td class="font-bold">${nombreDe(t)}</td>
+            ${celdaComp(m.LS.pct_positivas, m.LC.pct_positivas)}
+            ${celdaComp(m.LS.mediana_retorno, m.LC.mediana_retorno)}
+            ${celdaComp(m.LS.mejor_retorno, m.LC.mejor_retorno)}
+            ${celdaComp(m.LS.mediana_sharpe, m.LC.mediana_sharpe)}
+            ${celdaComp(m.LS.mediana_dd, m.LC.mediana_dd, false)}
+        </tr>`).join('');
+    document.getElementById('tabla-comp-activos').innerHTML = `
+        <thead><tr>
+            <th>Activo</th><th>% positivas</th><th>Mediana retorno (%)</th>
+            <th>Mejor retorno (%)</th><th>Mediana Sharpe</th><th>Mediana Max DD (%)</th>
+        </tr></thead><tbody>${filas}</tbody>`;
+
+    tablaDT('#tabla-pareada', [
+        { title: 'ADN (élite LS)', data: 'ADN', render: adnHtml },
+        { title: 'Peor retorno LS (%)', data: r => r.LS.min_ret, render: fmtPct },
+        { title: 'Peor retorno LC (%)', data: r => r.LC.min_ret, render: fmtPct },
+        { title: 'Sharpe prom. LS', data: r => r.LS.prom_sharpe },
+        { title: 'Sharpe prom. LC', data: r => r.LC.prom_sharpe },
+        { title: 'Peor DD LS (%)', data: r => r.LS.peor_dd, render: fmtPct },
+        { title: 'Peor DD LC (%)', data: r => r.LC.peor_dd, render: fmtPct },
+    ], d.pareada, 1);
 }
 
 // ---------------------- BTC legado ----------------------

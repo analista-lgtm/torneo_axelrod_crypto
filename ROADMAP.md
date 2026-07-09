@@ -29,8 +29,9 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Objetivo:** Abandonar el sesgo de selección: correr los 3 experimentos (N=2, N=3, N=4) de forma independiente sobre **cada** activo del universo (BTC, ETH, SPY, Oro, Petróleo, DXY) con una tubería de datos estandarizada, y auditar el overfitting en ambas direcciones.
 * **Implementación:** `src/data_pipeline.py` (ingesta estándar) + `src/multi_asset_tournament.py` (censo vectorizado, pools anti-overfitting por activo y élite universal). Resultados en `data/multi_activo/` y visualización completa en el dashboard `index.html`.
 * **Resultados Destacados (ventana 2021-07 → 2026-07):**
-  * **Overfitting confirmado a escala:** de las ~10,000-24,000 campeonas locales de cada activo (N=4), sobreviven entre 1 y 32 fuera de casa (>99.8% de tasa de overfitting).
-  * **14 estrategias universales** (N=4) con retorno positivo en los 6 mercados simultáneamente, agrupadas en 5 familias por distancia de Hamming.
+  * **Overfitting confirmado a escala:** de las ~10,000-24,000 campeonas locales de cada activo (N=4 Long/Short), sobreviven entre 1 y 32 fuera de casa (>99.8% de tasa de overfitting).
+  * **14 estrategias universales** (N=4 Long/Short) con retorno positivo en los 6 mercados simultáneamente, agrupadas en 5 familias por distancia de Hamming.
+  * **Duelo de modos (Long/Short vs Long/Cash):** el mismo ADN de la élite ejecutado en Long/Cash mejora el Sharpe promedio (10 de 10 casos) y el peor drawdown (10 de 10), a cambio de ceder algo de retorno máximo. La élite universal LC crece a 1,895 porque el modo no castiga los errores del bit 0 — el filtro cruzado es menos exigente y sus universales son menos informativos.
   * **ADN de consenso descubierto:** la élite converge en comprar pánico extremo (estado ▼▼▼▼ → 100% Long), vender el rebote falso (▼▼▼▲ → 100% Short) y surfear la tendencia (▲▲▲▲ → ~93% Long) — la filosofía "quimera" del Experimento 3 emerge de nuevo, pero ahora libre de sobreajuste.
   * En N=3 existe **una sola estrategia universal** (`10011111`), y su lógica es un sub-patrón exacto del consenso de N=4.
 
