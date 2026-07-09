@@ -48,9 +48,18 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 
 ## 🔮 Próximos Pasos (Future Horizon)
 
-### 🧪 Fase 1.5 (nueva, prerrequisito): Representación Robusta del Estado
+### 🧪 Fase 1.5: Laboratorio de Representaciones — Completada (Experimento 7)
 * **Motivación:** El Experimento 6 demostró que los estados binarios de secuencias diarias exactas no persisten en el tiempo. Antes de evolucionar nada, hay que encontrar una codificación del mercado cuya élite pase el walk-forward con lift > 3.
-* **Candidatos a explorar:** estados por magnitud y no solo signo (retornos grandes/pequeños), horizontes más largos (semanal), features de régimen (volatilidad, tendencia de medias móviles), y validación walk-forward con múltiples cortes (no uno solo).
+* **Implementación:** `src/representations.py` (codificaciones causales, sin fuga de futuro) + `src/representation_lab.py` (walk-forward con 4 cortes temporales distintos, modo Long/Short). Resultados en `data/multi_activo/representaciones.json` y pestaña "🔬 Representaciones" del dashboard.
+* **Resultados del duelo de representaciones (lift promedio en 4 cortes | supervivientes en TODOS los cortes):**
+  | Representación | Lift promedio | Supervivientes totales | Veredicto |
+  |---|---|---|---|
+  | Secuencia diaria N=4 (línea base) | 0.0 | 0 | ❌ Confirmado el Exp. 6 |
+  | Signo + magnitud (2 días) | 0.1 | 0 | ❌ Descartada |
+  | Secuencia semanal N=3 | 0.0 | 0 | ❌ Descartada |
+  | **Régimen (SMA20/SMA50 + volatilidad + día)** | **3.87** | **1** | 🟡 **Candidata** |
+* **La superviviente (`ID 52982`, ADN `1100111011110110`):** positiva en los 6 activos en la ventana completa (peor caso: +21.7% en DXY; ETH +548%) y universal en train Y test en los 4 cortes. Su lógica es interpretable: corto en tendencia bajista con volatilidad alta, largo en retrocesos dentro de tendencias alcistas, corto en euforia sobre-extendida.
+* **Cautela científica:** el lift de la representación régimen es heterogéneo entre cortes (0.72, 1.9, 6.71, 6.15 — más fuerte en los cortes recientes) y 1 superviviente de 65,536 aún podría ser azar residual. **Validación pendiente antes de la Fase 2:** evaluar la candidata en activos completamente nuevos (bonos TLT, emergentes EEM, divisas) que ningún experimento haya tocado — el out-of-sample definitivo.
 
 ### 🧬 Fase 2: Algorítmos Genéticos (Algorítmic Evolution)
 * **Objetivo:** Implementar operadores de cruce (*crossover*), mutación de bits aleatoria y selección natural por torneo.

@@ -45,6 +45,7 @@
         <button data-sec="elite" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🧬 Élite Universal</button>
         <button data-sec="comparativa" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⚖️ LS vs LC</button>
         <button data-sec="walkforward" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⏳ Walk-Forward</button>
+        <button data-sec="reps" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🔬 Representaciones</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -171,6 +172,21 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN REPRESENTACIONES ==================== -->
+    <section id="sec-reps" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Fase 1.5: Laboratorio de Representaciones</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="reps-desc">
+                Cada codificación del mercado compite bajo el mismo tribunal: walk-forward con <b>4 cortes
+                temporales distintos</b> en modo Long/Short. Una representación robusta debe producir élites que
+                sobrevivan el futuro sin importar dónde se corte la historia. Los <b>supervivientes totales</b>
+                son estrategias universales en train y test en <i>todos</i> los cortes a la vez — las únicas
+                candidatas a señal real.
+            </p>
+        </div>
+        <div id="reps-cards" class="space-y-6"></div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -250,7 +266,8 @@ async function mostrarSeccion(sec) {
         b.className = `nav-btn px-4 py-2 rounded-xl font-bold text-sm ${b.dataset.sec === sec ? 'nav-active' : 'nav-inactive'}`);
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
-                              elite: initElite, comparativa: initComp, walkforward: initWF, legado: initLegado };
+                              elite: initElite, comparativa: initComp, walkforward: initWF,
+                              reps: initReps, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -555,6 +572,55 @@ async function pintarWF() {
             ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
         ...tickers.map(t => ({ title: `${nombreDe(t)} test (%)`, data: r => r.retornos_test[t], render: fmtPct })),
     ], d.top, 1);
+}
+
+// ---------------------- Representaciones (Fase 1.5) ----------------------
+async function initReps() {
+    await cargarMeta();
+    const d = await cargar('data/multi_activo/representaciones.json');
+    const tickers = META.activos.map(a => a.ticker);
+    document.getElementById('reps-cards').innerHTML =
+        Object.entries(d.representaciones).map(([id, r]) => {
+            const lift = r.lift_promedio;
+            const veredicto = r.supervivientes_totales > 0 && lift >= 3
+                ? ['border-green-700', `✅ Candidata: lift promedio ${lift}× y ${r.supervivientes_totales} superviviente(s) en todos los cortes.`]
+                : (lift !== null && lift >= 1.5
+                    ? ['border-amber-700', `⚠️ Señal débil (lift promedio ${lift}×${r.supervivientes_totales > 0 ? `, ${r.supervivientes_totales} supervivientes` : ', sin supervivientes totales'}). Insuficiente.`]
+                    : ['border-red-700', `❌ Descartada: lift promedio ${lift === null ? '—' : lift + '×'}, ${r.supervivientes_totales} supervivientes en todos los cortes.`]);
+            const filasCortes = r.cortes.map(c => !c.valido
+                ? `<tr><td>${c.corte}</td><td colspan="5" class="text-slate-500">datos insuficientes</td></tr>`
+                : `<tr><td>${c.corte}</td><td>${fmtNum(c.train_universales)}</td>
+                     <td>${fmtNum(c.sobreviven)}</td><td>${c.base_rate_pct}%</td>
+                     <td>${c.pct_supervivencia === null ? '—' : c.pct_supervivencia + '%'}</td>
+                     <td class="font-bold ${c.lift >= 3 ? 'pos' : (c.lift >= 1.5 ? 'text-amber-400' : 'neg')}">${c.lift === null ? '—' : c.lift + '×'}</td></tr>`).join('');
+            const tablaSup = r.supervivientes.length === 0 ? '' : `
+                <div class="mt-4 overflow-x-auto">
+                    <div class="text-sm font-semibold text-slate-300 mb-2">Supervivientes totales (retornos ventana completa):</div>
+                    <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden">
+                        <thead><tr><th>ADN</th>${tickers.map(t => `<th>${nombreDe(t)}</th>`).join('')}<th>Peor</th></tr></thead>
+                        <tbody>${r.supervivientes.map(s => `<tr><td class="adn">${s.ADN}</td>
+                            ${tickers.map(t => `<td>${fmtPct(s.retornos[t])}</td>`).join('')}
+                            <td class="font-bold">${fmtPct(s.min)}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            return `
+            <div class="bg-slate-800 p-6 rounded-2xl border ${veredicto[0]}">
+                <div class="flex flex-wrap justify-between items-baseline mb-1 gap-2">
+                    <h3 class="text-xl font-bold text-slate-100">${r.nombre}</h3>
+                    <span class="text-xs text-slate-500">${fmtNum(r.total_estrategias)} estrategias · ${r.n_estados} estados</span>
+                </div>
+                <p class="text-slate-500 text-xs mb-3">Hipótesis: ${r.hipotesis}</p>
+                <div class="text-sm mb-4">${veredicto[1]}</div>
+                <div class="overflow-x-auto">
+                    <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden">
+                        <thead><tr><th>Corte</th><th>Train-universales</th><th>Sobreviven test</th>
+                        <th>Tasa base</th><th>% supervivencia</th><th>Lift</th></tr></thead>
+                        <tbody>${filasCortes}</tbody>
+                    </table>
+                </div>
+                ${tablaSup}
+            </div>`;
+        }).join('');
 }
 
 // ---------------------- BTC legado ----------------------
