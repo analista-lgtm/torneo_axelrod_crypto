@@ -46,6 +46,7 @@
         <button data-sec="comparativa" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⚖️ LS vs LC</button>
         <button data-sec="walkforward" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⏳ Walk-Forward</button>
         <button data-sec="reps" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🔬 Representaciones</button>
+        <button data-sec="virgen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌱 Activos Vírgenes</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -187,6 +188,27 @@
         <div id="reps-cards" class="space-y-6"></div>
     </section>
 
+    <!-- ==================== SECCIÓN ACTIVOS VÍRGENES ==================== -->
+    <section id="sec-virgen" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 8: el out-of-sample definitivo</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Las candidatas de la representación de régimen (supervivientes de ≥3 de 4 cortes walk-forward)
+                se evalúan en <b>mercados que ningún experimento tocó jamás</b>: bonos, emergentes, Japón, plata
+                y dólar/yen. Si su tasa de aprobación no supera con claridad la tasa base del azar (lift ≫ 1),
+                la señal no generaliza.
+            </p>
+        </div>
+        <div id="virgen-jurado" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
+        <div id="virgen-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="virgen-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Candidatas ante el jurado virgen</h2>
+            <p class="text-slate-500 text-xs mb-4" id="virgen-criterio"></p>
+            <table id="tabla-virgen" class="display w-full"></table>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -267,7 +289,7 @@ async function mostrarSeccion(sec) {
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
-                              reps: initReps, legado: initLegado };
+                              reps: initReps, virgen: initVirgen, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -621,6 +643,49 @@ async function initReps() {
                 ${tablaSup}
             </div>`;
         }).join('');
+}
+
+// ---------------------- Activos vírgenes (Exp. 8) ----------------------
+async function initVirgen() {
+    const d = await cargar('data/multi_activo/validacion_virgen.json');
+    const nombreV = Object.fromEntries(d.jurado.map(a => [a.ticker, a.nombre]));
+    document.getElementById('virgen-jurado').innerHTML = d.jurado.map(a => `
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <div class="text-sm font-bold text-slate-100">${a.nombre}</div>
+            <div class="text-xs text-slate-500">${a.ticker} · ${fmtNum(a.velas)} velas</div>
+            <div class="text-xs text-slate-400 mt-1">B&H: ${fmtPct(a.bh_retorno)}</div>
+        </div>`).join('');
+    document.getElementById('virgen-chips').innerHTML =
+        chip('Candidatas (≥3/4 cortes)', fmtNum(d.num_candidatas)) +
+        chip('Aprueban el jurado', `${fmtNum(d.aprueban)} (${d.tasa_candidatas_pct}%)`,
+             d.aprueban > 0 ? 'pos' : 'neg') +
+        chip('Tasa base (azar)', d.base_rate_pct + '%') +
+        chip('LIFT', d.lift === null ? '—' : d.lift + '×',
+             d.lift >= 3 ? 'pos' : (d.lift >= 1.5 ? 'text-amber-400' : 'neg'));
+    let v;
+    if (d.lift !== null && d.lift >= 3 && d.aprueban > 0) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ Las candidatas aprueban el jurado virgen a <b>${d.lift}×</b> la tasa del azar: la señal de régimen generaliza a mercados nunca vistos.`];
+    } else if (d.lift !== null && d.lift >= 1.5) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ Generalización débil (lift ${d.lift}×). La señal existe pero no con la contundencia exigida.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ La señal de régimen NO generaliza: las candidatas no superan al azar en mercados vírgenes (lift ${d.lift === null ? '—' : d.lift + '×'}).`];
+    }
+    document.getElementById('virgen-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('virgen-criterio').textContent =
+        `Candidatas: ${d.criterio_candidatas}. Aprobación: ${d.criterio_aprobacion}.`;
+    const tickersV = d.jurado.map(a => a.ticker);
+    tablaDT('#tabla-virgen', [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        { title: 'Cortes WF', data: 'pases_walkforward', render: p => `${p}/4` },
+        ...tickersV.map(t => ({ title: `${nombreV[t]} (%)`, data: r => r.retornos[t], render: fmtPct })),
+        { title: 'Peor (%)', data: 'min', render: fmtPct },
+        { title: '¿Aprueba?', data: 'aprueba', render: a => a
+            ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
+    ], d.candidatas, 1);
 }
 
 // ---------------------- BTC legado ----------------------

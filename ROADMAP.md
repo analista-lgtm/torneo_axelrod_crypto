@@ -44,6 +44,13 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
   * La mediana del peor retorno en test de la élite train (−48.8%) es inferior a la del universo completo (−38.5%): los patrones ganadores de 2021-2024 tienden a *revertirse* en 2024-2026.
 * **Implicación:** las 14 "universales" del Experimento 5 deben considerarse artefactos in-sample de la ventana completa hasta que se demuestre lo contrario. La representación actual (autómata binario de secuencias diarias exactas) captura regímenes, no leyes: es demasiado frágil ante el cambio de régimen. **No avanzar a algoritmos genéticos sobre esta representación** — evolucionarían ruido.
 
+### 🌱 Experimento 8: Validación en Activos Vírgenes — Completada
+* **Objetivo:** El out-of-sample definitivo. Las candidatas de régimen (supervivientes de ≥3 de 4 cortes del Exp. 7: la ID 52982 con 4/4 y dos vecinas con 3/4) se evaluaron en 5 mercados que ningún experimento tocó jamás: bonos del Tesoro (TLT), emergentes (EEM), Nikkei 225, plata (SI=F) y dólar/yen (USDJPY=X).
+* **Implementación:** `src/virgin_validation.py`, resultados en `data/multi_activo/validacion_virgen.json` y pestaña "🌱 Activos Vírgenes" del dashboard.
+* **Veredicto: NO APRUEBA el criterio estricto.** 0 de 3 candidatas logran retorno positivo en los 5 vírgenes (tasa base del azar: 3.42%, lift 0).
+* **Matiz relevante (honesto en ambas direcciones):** la ID 52982 no colapsó como las élites del Exp. 6 — ganó con fuerza en 3 de 5 vírgenes (EEM +154%, Plata +87%, USDJPY +55%) y perdió poco en los otros dos (TLT −7.4%, Nikkei −6.1%). El perfil es cualitativamente mejor que el de cualquier estrategia anterior, pero "mejor que las anteriores" no es el estándar: el estándar es superar al azar con claridad, y no lo hizo.
+* **Conclusión de la campaña (Exps. 5-8):** tras censar 65,536 estrategias × 4 representaciones × 2 modos × 11 activos × walk-forward multi-corte, **ninguna estrategia individual de autómata fijo sobrevive todos los tests**. Esto es un resultado científico, no un fracaso: el espacio de autómatas binarios sobre estados diarios no contiene ventajas persistentes y explotables a esta granularidad. El activo real del proyecto es el **tribunal de validación** (multi-activo + multi-corte + jurado virgen), reutilizable para cualquier hipótesis futura en minutos.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)
