@@ -37,6 +37,7 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 6 | `src/walk_forward.py` | Experimento 6: validación temporal train (21-24) / test (24-26) con lift vs. azar — **veredicto: overfitting temporal total en la representación actual** | `data/multi_activo/walkforward.json` |
 | 7 | `src/representation_lab.py` | Experimento 7 (Fase 1.5): duelo de 4 representaciones (`src/representations.py`) bajo walk-forward de 4 cortes — la de **régimen** (SMA + volatilidad) es la única candidata (lift 3.87, 1 superviviente total) | `data/multi_activo/representaciones.json` |
 | 8 | `src/virgin_validation.py` | Experimento 8: candidatas de régimen ante 5 activos vírgenes (TLT, EEM, Nikkei, plata, USDJPY) — **no aprueban el criterio estricto (lift 0)**; conclusión: ninguna estrategia individual de autómata fijo sobrevive todos los tests | `data/multi_activo/validacion_virgen.json` |
+| 9 | `src/specialist_test.py` | Experimento 9: persistencia local por mercado sin exigencia cruzada (lift + Spearman train↔test) — la memoria explotable está en índices bursátiles (SPY 0.41, Nikkei 0.27) y **no en cripto** (BTC 0.11, ETH −0.11) | `data/multi_activo/especialistas.json` |
 
 `src/data_pipeline.py` es la capa estándar de ingesta (Yahoo Finance, misma ventana, misma limpieza y codificación para todos los activos) — cualquier análisis nuevo debe consumir datos a través de ella para mantener la comparabilidad.
 

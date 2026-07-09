@@ -47,6 +47,7 @@
         <button data-sec="walkforward" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⏳ Walk-Forward</button>
         <button data-sec="reps" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🔬 Representaciones</button>
         <button data-sec="virgen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌱 Activos Vírgenes</button>
+        <button data-sec="espec" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🎯 Especialistas</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -209,6 +210,28 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN ESPECIALISTAS ==================== -->
+    <section id="sec-espec" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 9: ¿existen las especialistas?</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Hipótesis: los mercados son distintos y una estrategia puede ser rentable <b>solo en el suyo</b>.
+                Esta prueba elimina la exigencia cruzada: las campeonas del train (le ganan al Buy &amp; Hold de su
+                propio mercado) se evalúan únicamente en <b>su mercado</b> en el período de test. El <b>lift</b>
+                mide si repiten mejor que el azar; el <b>Spearman</b> mide si el ranking completo de las 65,536
+                estrategias persiste entre períodos (≈0 = ruido puro, &lt;0 = los ganadores del pasado tienden a
+                perder en el futuro).
+            </p>
+        </div>
+        <div id="espec-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="espec-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Persistencia temporal por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4">Promedios sobre 4 cortes temporales × 2 representaciones (secuencia diaria y régimen), en el propio mercado, sin exigencia cruzada.</p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-espec"></table>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -289,7 +312,7 @@ async function mostrarSeccion(sec) {
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
-                              reps: initReps, virgen: initVirgen, legado: initLegado };
+                              reps: initReps, virgen: initVirgen, espec: initEspec, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -686,6 +709,43 @@ async function initVirgen() {
         { title: '¿Aprueba?', data: 'aprueba', render: a => a
             ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
     ], d.candidatas, 1);
+}
+
+// ---------------------- Especialistas (Exp. 9) ----------------------
+async function initEspec() {
+    const d = await cargar('data/multi_activo/especialistas.json');
+    const g = d.global;
+    document.getElementById('espec-chips').innerHTML =
+        chip('Mercados evaluados', fmtNum(Object.keys(d.mercados).length)) +
+        chip('Cortes × Reps', `${d.cortes.length} × ${Object.keys(d.representaciones).length}`) +
+        chip('Lift promedio global', g.lift_promedio + '×',
+             g.lift_promedio >= 3 ? 'pos' : (g.lift_promedio >= 1.5 ? 'text-amber-400' : 'neg')) +
+        chip('Spearman promedio global', g.spearman_promedio,
+             g.spearman_promedio > 0.2 ? 'pos' : (g.spearman_promedio > 0.05 ? 'text-amber-400' : 'neg'));
+    let v;
+    if (g.lift_promedio >= 3 && g.spearman_promedio > 0.2) {
+        v = ['bg-green-900/40 border-green-700', '✅ La especialización existe: las campeonas locales persisten en su propio mercado.'];
+    } else if (g.lift_promedio >= 1.5 || g.spearman_promedio > 0.1) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Persistencia local débil (lift ${g.lift_promedio}×, Spearman ${g.spearman_promedio}): alguna memoria existe, pero insuficiente para explotarla con confianza.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ Las especialistas tampoco persisten: incluso sin exigencia cruzada, las campeonas de cada mercado no repiten en su propio futuro mejor que el azar (lift ${g.lift_promedio}×, Spearman ${g.spearman_promedio}).`];
+    }
+    document.getElementById('espec-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    const filas = Object.entries(d.mercados)
+        .sort((a, b) => (b[1].lift_promedio ?? -1) - (a[1].lift_promedio ?? -1))
+        .map(([tk, m]) => {
+            const l = m.lift_promedio, s = m.spearman_promedio;
+            const cl = l >= 3 ? 'pos' : (l >= 1.5 ? 'text-amber-400' : 'neg');
+            const cs = s > 0.2 ? 'pos' : (s > 0.05 ? 'text-amber-400' : 'neg');
+            return `<tr><td class="font-bold">${m.nombre}</td><td class="text-slate-500">${tk}</td>
+                <td class="font-bold ${cl}">${l === null ? '—' : l + '×'}</td>
+                <td class="font-bold ${cs}">${s === null ? '—' : s}</td>
+                <td>${l >= 3 && s > 0.2 ? '✅ persiste' : (l >= 1.5 ? '⚠️ débil' : '❌ no persiste')}</td></tr>`;
+        }).join('');
+    document.getElementById('tabla-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Ticker</th><th>Lift promedio</th>
+        <th>Spearman train↔test</th><th>Veredicto</th></tr></thead><tbody>${filas}</tbody>`;
 }
 
 // ---------------------- BTC legado ----------------------

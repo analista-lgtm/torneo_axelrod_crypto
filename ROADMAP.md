@@ -51,6 +51,15 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Matiz relevante (honesto en ambas direcciones):** la ID 52982 no colapsó como las élites del Exp. 6 — ganó con fuerza en 3 de 5 vírgenes (EEM +154%, Plata +87%, USDJPY +55%) y perdió poco en los otros dos (TLT −7.4%, Nikkei −6.1%). El perfil es cualitativamente mejor que el de cualquier estrategia anterior, pero "mejor que las anteriores" no es el estándar: el estándar es superar al azar con claridad, y no lo hizo.
 * **Conclusión de la campaña (Exps. 5-8):** tras censar 65,536 estrategias × 4 representaciones × 2 modos × 11 activos × walk-forward multi-corte, **ninguna estrategia individual de autómata fijo sobrevive todos los tests**. Esto es un resultado científico, no un fracaso: el espacio de autómatas binarios sobre estados diarios no contiene ventajas persistentes y explotables a esta granularidad. El activo real del proyecto es el **tribunal de validación** (multi-activo + multi-corte + jurado virgen), reutilizable para cualquier hipótesis futura en minutos.
 
+### 🎯 Experimento 9: La Prueba del Especialista — Completada
+* **Hipótesis a probar:** los mercados son distintos por naturaleza y una estrategia puede ser rentable solo en el suyo (una especialista de BTC no necesita funcionar en divisas). Lo que la hipótesis no elimina: la especialista debe funcionar en el futuro de *su propio* mercado.
+* **Implementación:** `src/specialist_test.py` — para cada uno de los 11 mercados, sin exigencia cruzada: campeonas del train (retorno > B&H local) evaluadas contra el B&H de su mercado en test (4 cortes × 2 representaciones). Métricas: lift local y correlación de Spearman del ranking completo de las 65,536 estrategias entre train y test. Pestaña "🎯 Especialistas" del dashboard.
+* **Resultados (lift promedio | Spearman promedio):**
+  * ✳️ Con persistencia débil pero real: **S&P 500 (2.56× | 0.41)**, **Nikkei 225 (2.84× | 0.27)**, Petróleo (1.27× | 0.36), Bonos TLT (1.12× | 0.35), USDJPY (1.69× | 0.25).
+  * ❌ Sin persistencia: **Bitcoin (1.13× | 0.11)**, **Ethereum (0.88× | −0.11)**, DXY (0.94× | −0.06), Plata (0.52× | 0.11).
+  * Global: lift 1.46×, Spearman 0.17 — memoria débil, existente, heterogénea.
+* **Conclusión (el giro irónico):** la hipótesis de especialización es correcta en dirección pero invertida en objetivo: **los mercados con más memoria explotable son los índices bursátiles y las tasas, y los que menos tienen son las criptomonedas** — justo donde nació el proyecto. Ningún mercado alcanza el estándar duro (lift ≥ 3), pero SPY y Nikkei quedan cerca, lo que apunta a que la señal aprovechable es la de tendencia/momentum en índices, no los patrones diarios en cripto.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)
