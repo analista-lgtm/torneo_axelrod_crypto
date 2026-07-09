@@ -40,6 +40,7 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 9 | `src/specialist_test.py` | Experimento 9: persistencia local por mercado sin exigencia cruzada (lift + Spearman train↔test) — la memoria explotable está en índices bursátiles (SPY 0.41, Nikkei 0.27) y **no en cripto** (BTC 0.11, ETH −0.11) | `data/multi_activo/especialistas.json` |
 | 10 | `src/portfolio_survivors.py` | Experimento 10: doble pista (universales + especialistas por mercado) con **período sagrado** (últimos 12 meses intocados) — el portafolio de supervivientes **falla el examen sagrado** (−1.7% vs +18.5% B&H); cierre del arco: los autómatas fijos no contienen ventaja explotable | `data/multi_activo/portafolio.json` |
 | 11 | `src/classic_lab.py` | Experimento 11: 28 estrategias clásicas (`src/classic_strategies.py`: TSMOM, SMAs, Donchian, RSI) ante el tribunal — 0 universales, 2 especialistas marginales, portafolio plano en el sagrado. Lección: las ventajas reales son débiles y requieren tests agregados, no supervivencia segmento a segmento | `data/multi_activo/clasicas.json` |
+| 12 | `src/meta_portfolio.py` | Experimento 12 ⭐: TSMOM-252 pre-registrado, diversificado en 11 mercados con paridad de riesgo — **primera señal significativa** (Sharpe 0.67, t-stat 1.78, p=0.0355, DD un tercio menor que B&H); secundarias no pasan Bonferroni | `data/multi_activo/meta_portafolio.json` |
 
 La historia narrativa completa del laboratorio está en `BITACORA.md`; el resumen público en `README.md`.
 

@@ -111,6 +111,27 @@ Lo que queda construido y es reutilizable para cualquier hipótesis futura:
 Con la métrica del **lift** (¿supera al azar?) como juez en cada capa. Ninguna
 estrategia amateur sobrevive las 4 capas por suerte.
 
+## Epílogo — Capítulos 7 y 8: el instrumento correcto (Exps. 11-12)
+
+El Experimento 11 sometió al tribunal 28 estrategias clásicas con evidencia
+académica (momentum, cruces de medias, Donchian, RSI). Resultado: ni siquiera
+TSMOM-252 — la anomalía más documentada de las finanzas — aprueba el criterio de
+"ganar en todos los segmentos". La lección cambió el instrumento: **las ventajas
+reales son débiles**; pierden tramos individuales con frecuencia y no se detectan
+por supervivencia, sino por agregación estadística.
+
+El Experimento 12 aplicó esa lección: TSMOM-252 **pre-registrado** (una sola
+hipótesis primaria, cero selección), diversificado sobre los 11 mercados con
+paridad de riesgo. Resultado: **la primera señal estadísticamente significativa
+de la campaña** — Sharpe 0.67, t-stat 1.78, p(bootstrap) = 0.0355, con un tercio
+menos de drawdown que el B&H diversificado y ganancias en el año bajista de 2022.
+Evidencia moderada (el CI del Sharpe roza el cero; 5 años es poco), pero coherente
+con 50 años de literatura y obtenida sin ningún proceso que pudiera fabricarla.
+
+La historia completa, en una frase: **no existen reglas mágicas individuales; existe
+una prima débil de tendencia, cosechable solo con diversificación masiva, humildad
+estadística y paciencia.**
+
 ## Lecciones para quien lea esto
 
 - Con 65,536 intentos, *algo* siempre parece funcionar. La abundancia del espacio de búsqueda es la causa del overfitting, no la solución.

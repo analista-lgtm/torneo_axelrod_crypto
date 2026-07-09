@@ -50,6 +50,7 @@
         <button data-sec="espec" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🎯 Especialistas</button>
         <button data-sec="port" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">💼 Portafolio</button>
         <button data-sec="clasicas" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏛️ Clásicas</button>
+        <button data-sec="meta" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌐 Meta-Portafolio</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -288,6 +289,35 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN META-PORTAFOLIO ==================== -->
+    <section id="sec-meta" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 12: el meta-portafolio estadístico</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="meta-desc">
+                Cambio de instrumento: las reglas se fijan <b>a priori desde la literatura</b> (sin selección →
+                sin sesgo de selección) y se aplican a los 11 mercados a la vez con <b>paridad de riesgo</b>.
+                La pregunta ya no es "¿cuál estrategia gana?" sino "¿el agregado diversificado de una señal débil
+                tiene ventaja estadísticamente significativa?" — medida con t-stat y bootstrap por bloques.
+                La variante <b>primaria pre-registrada es TSMOM-252</b>; las secundarias se leen con corrección
+                de Bonferroni.
+            </p>
+        </div>
+        <div id="meta-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Inferencia estadística por variante</h2>
+            <p class="text-slate-500 text-xs mb-4">Ventana completa 2021-2026 sobre los 11 mercados. p(boot) = probabilidad de que la media diaria sea ≤ 0 (bootstrap por bloques de 10 días, 2,000 remuestreos).</p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-meta"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Consistencia por año calendario</h2>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-meta-anios"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Equity mensual (capital inicial = 1)</h2>
+            <canvas id="chart-meta" height="110"></canvas>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -369,7 +399,7 @@ async function mostrarSeccion(sec) {
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
                               reps: initReps, virgen: initVirgen, espec: initEspec,
-                              port: initPort, clasicas: initClasicas, legado: initLegado };
+                              port: initPort, clasicas: initClasicas, meta: initMeta, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -983,6 +1013,88 @@ async function initClasicas() {
             plugins: { legend: { labels: { color: '#cbd5e1' } } },
             scales: {
                 x: { ticks: { color: '#64748b', maxTicksLimit: 13 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Meta-Portafolio (Exp. 12) ----------------------
+let chartMeta = null;
+async function initMeta() {
+    const d = await cargar('data/multi_activo/meta_portafolio.json');
+    const primaria = 'TSMOM-252 (primaria)';
+    const p = d.variantes[primaria];
+
+    // Veredicto sobre la variante primaria
+    const sig = p.inferencia.p_bootstrap < 0.05;
+    const casi = p.inferencia.p_bootstrap < 0.15;
+    let v;
+    if (sig) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ TSMOM-252 diversificado tiene ventaja estadísticamente significativa: t-stat ${p.inferencia.t_stat}, p(boot) ${p.inferencia.p_bootstrap}, Sharpe ${p.total.sharpe} (CI95 ${p.inferencia.ci_sharpe_95.join(' a ')}).`];
+    } else if (casi) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ TSMOM-252 diversificado apunta en la dirección correcta (Sharpe ${p.total.sharpe}, t-stat ${p.inferencia.t_stat}) pero no alcanza significancia (p(boot) ${p.inferencia.p_bootstrap}): la ventana de 5 años es corta para una ventaja débil.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ TSMOM-252 diversificado no muestra ventaja en esta ventana: Sharpe ${p.total.sharpe}, t-stat ${p.inferencia.t_stat}, p(boot) ${p.inferencia.p_bootstrap}.`];
+    }
+    document.getElementById('meta-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+
+    // Tabla de inferencia
+    const filas = Object.entries(d.variantes).map(([n, r]) => `
+        <tr><td class="font-bold">${n}</td>
+        <td>${fmtPct(r.total.retorno)}</td><td>${r.total.sharpe}</td><td>${fmtPct(r.total.max_dd)}</td>
+        <td>${r.inferencia.t_stat}</td>
+        <td class="${r.inferencia.p_bootstrap < 0.05 ? 'pos font-bold' : (r.inferencia.p_bootstrap < 0.15 ? 'text-amber-400' : 'neg')}">${r.inferencia.p_bootstrap}</td>
+        <td>${r.inferencia.ci_sharpe_95.join(' a ')}</td>
+        <td>${fmtPct(r.sagrado.retorno)}</td></tr>`).join('') + `
+        <tr><td class="font-bold text-slate-400">Benchmark B&H diversificado</td>
+        <td>${fmtPct(d.benchmark_bh.total.retorno)}</td><td>${d.benchmark_bh.total.sharpe}</td>
+        <td>${fmtPct(d.benchmark_bh.total.max_dd)}</td><td>—</td><td>—</td><td>—</td>
+        <td>${fmtPct(d.benchmark_bh.sagrado.retorno)}</td></tr>`;
+    document.getElementById('tabla-meta').innerHTML = `
+        <thead><tr><th>Variante</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>p (boot)</th><th>Sharpe CI95</th><th>Sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    // Consistencia anual
+    const anios = Object.keys(p.por_anio);
+    const filasA = Object.entries(d.variantes).map(([n, r]) => `
+        <tr><td class="font-bold">${n}</td>${anios.map(a => `<td>${fmtPct(r.por_anio[a] ?? 0)}</td>`).join('')}</tr>`).join('');
+    document.getElementById('tabla-meta-anios').innerHTML = `
+        <thead><tr><th>Variante</th>${anios.map(a => `<th>${a}</th>`).join('')}</tr></thead>
+        <tbody>${filasA}</tbody>`;
+
+    // Gráfico: primaria + ensamble + benchmark + SPY
+    const series = [
+        ['TSMOM-252 (primaria)', d.variantes[primaria].curva, '#22c55e', 2.5, []],
+        ['Ensamble (voto)', d.variantes['Ensamble (voto)'].curva, '#a855f7', 1.8, []],
+        ['B&H diversificado', d.benchmark_bh.curva, '#94a3b8', 2, [6, 4]],
+        ['S&P 500', d.spy.curva, '#0ea5e9', 1.5, [2, 3]],
+    ];
+    const labels = d.benchmark_bh.curva.labels;
+    if (chartMeta) chartMeta.destroy();
+    chartMeta = new Chart(document.getElementById('chart-meta'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: series.map(([label, curva, color, width, dash]) => ({
+                label, borderColor: color, borderWidth: width, borderDash: dash,
+                pointRadius: 0, tension: 0.2,
+                data: labels.map(l => {
+                    const i = curva.labels.indexOf(l);
+                    return i >= 0 ? curva.valores[i] : null;
+                }),
+            })),
+        },
+        options: {
+            spanGaps: true,
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
                 y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
             },
         },
