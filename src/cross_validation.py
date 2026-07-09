@@ -3,13 +3,7 @@ import numpy as np
 import json
 import os
 
-# Asegurar la presencia de yfinance
-try:
-    import yfinance as yf
-except ImportError:
-    print("[*] Instalando yfinance para la ingesta de mercados globales...")
-    os.system('pip install yfinance')
-    import yfinance as yf
+import yfinance as yf
 
 def safe_data_ingestion(ticker, start_date="2021-07-01", end_date="2026-03-01"):
     """
