@@ -4,6 +4,7 @@ Laboratorio de trading cuantitativo que aplica torneos evolutivos al estilo Axel
 sobre mercados financieros, con un **tribunal de validación anti-overfitting de 4
 capas**: multi-activo → walk-forward multi-corte → jurado virgen → período sagrado.
 
+- 🧭 **[REFLEXIONES.md](REFLEXIONES.md)** — el informe final para colaboradores: el sistema 40/60 en detalle, la teoría que lo soporta, y las reflexiones sobre aleatoriedad, convexidad, overfitting, índices y cómo aprovecharlo en el mundo real.
 - 📜 **[CONCLUSIONES.md](CONCLUSIONES.md)** — documento técnico de cierre: el hallazgo, su mecanismo económico y la cadena de inferencia (para expertos en finanzas/estadística).
 - 📖 **[BITACORA.md](BITACORA.md)** — la historia científica completa y sus lecciones.
 - 🗺️ **[ROADMAP.md](ROADMAP.md)** — detalle de cada experimento (5-15) y próximos pasos.
