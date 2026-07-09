@@ -18,6 +18,9 @@ La hipótesis primaria sigue siendo TSMOM-252 (pre-registrada en el Exp.
 12); mismas secundarias con Bonferroni; misma inferencia (t-stat +
 bootstrap por bloques). El "período sagrado" (2025-07 ->) se reporta.
 
+Las funciones `cargar_mercados()` y `construir()` son reutilizadas por el
+Experimento 14 (mezcla institucional TSMOM + B&H).
+
 Salida: data/multi_activo/meta_portafolio_v2.json (mismo esquema que v1;
 el dashboard la muestra con el selector de la pestaña 🌐).
 """
@@ -59,18 +62,14 @@ VARIANTES = {
 }
 
 
-def main():
-    print("=" * 70)
-    print("   EXPERIMENTO 13: META-PORTAFOLIO v2 (2015-2026, COSTOS, VOL-TARGET)")
-    print("=" * 70)
-
+def cargar_mercados():
+    """Descarga el universo y precalcula señales, retornos y pesos de riesgo."""
     universo = {}
-    for tk, nombre in MERCADOS.items():
+    for tk in MERCADOS:
         df = preparar_activo(tk, inicio=INICIO, fin=FIN)
         if df is not None:
             universo[tk] = df
     mercados = list(universo.keys())
-    print(f"\n[*] {len(mercados)} mercados aceptados de {len(MERCADOS)} solicitados")
 
     senales = {v: {} for v in VARIANTES}
     senales["Ensamble (voto)"] = {}
@@ -88,38 +87,57 @@ def main():
         senales["Ensamble (voto)"][t] = np.sign(sum(votos))
 
     calendario = pd.DatetimeIndex(sorted(set().union(*[set(f) for f in fechas_m.values()])))
+    return {
+        "mercados": mercados, "senales": senales, "ret_mercado": ret_mercado,
+        "peso_riesgo": peso_riesgo, "fechas_m": fechas_m, "calendario": calendario,
+    }
+
+
+def senales_siempre_largo(b):
+    return {t: pd.Series(1.0, index=b["fechas_m"][t]) for t in b["mercados"]}
+
+
+def construir(b, senal_por_mercado, con_costos=True):
+    """Retornos diarios: paridad de riesgo + costos por rotación + vol-target."""
+    calendario = b["calendario"]
     vol_diaria_objetivo = VOL_OBJETIVO_ANUAL / np.sqrt(252)
+    pesos_crudos, contrib = {}, {}
+    for t in b["mercados"]:
+        s = senal_por_mercado[t].reindex(calendario)
+        w = b["peso_riesgo"][t].reindex(calendario)
+        r = b["ret_mercado"][t].reindex(calendario)
+        activo = s.notna() & w.notna() & np.isfinite(w) & r.notna()
+        rotacion = s.fillna(0.0).diff().abs().fillna(0.0)
+        bruto = s * r - (COSTO * rotacion if con_costos else 0.0)
+        pesos_crudos[t] = w.where(activo, 0.0).fillna(0.0)
+        contrib[t] = bruto.where(activo, 0.0).fillna(0.0)
+    total_w = sum(pesos_crudos.values())
+    base = pd.Series(0.0, index=calendario)
+    for t in b["mercados"]:
+        wn = (pesos_crudos[t] / total_w).where(total_w > 0, 0.0).fillna(0.0)
+        base += wn * contrib[t]
+    base = base[total_w > 0]
+    # Vol-targeting causal: vol rodante del propio portafolio, rezagada 1 día
+    vol_port = base.rolling(VOL_VENTANA).std().shift(1)
+    lev = (vol_diaria_objetivo / vol_port).clip(upper=LEV_MAX).fillna(1.0)
+    return lev * base
 
-    def construir(senal_por_mercado, con_costos=True):
-        """Retornos diarios: paridad de riesgo + costos por rotación + vol-target."""
-        pesos_crudos, contrib = {}, {}
-        for t in mercados:
-            s = senal_por_mercado[t].reindex(calendario)
-            w = peso_riesgo[t].reindex(calendario)
-            r = ret_mercado[t].reindex(calendario)
-            activo = s.notna() & w.notna() & np.isfinite(w) & r.notna()
-            rotacion = s.fillna(0.0).diff().abs().fillna(0.0)
-            bruto = s * r - (COSTO * rotacion if con_costos else 0.0)
-            pesos_crudos[t] = w.where(activo, 0.0).fillna(0.0)
-            contrib[t] = bruto.where(activo, 0.0).fillna(0.0)
-        total_w = sum(pesos_crudos.values())
-        base = pd.Series(0.0, index=calendario)
-        for t in mercados:
-            wn = (pesos_crudos[t] / total_w).where(total_w > 0, 0.0).fillna(0.0)
-            base += wn * contrib[t]
-        base = base[total_w > 0]
-        # Vol-targeting causal: vol rodante del propio portafolio, rezagada 1 día
-        vol_port = base.rolling(VOL_VENTANA).std().shift(1)
-        lev = (vol_diaria_objetivo / vol_port).clip(upper=LEV_MAX).fillna(1.0)
-        return lev * base
 
-    siempre_largo = {t: pd.Series(1.0, index=fechas_m[t]) for t in mercados}
-    bench = construir(siempre_largo, con_costos=False)
-    spy = ret_mercado["SPY"].reindex(calendario).dropna()
+def main():
+    print("=" * 70)
+    print("   EXPERIMENTO 13: META-PORTAFOLIO v2 (2015-2026, COSTOS, VOL-TARGET)")
+    print("=" * 70)
+
+    b = cargar_mercados()
+    mercados = b["mercados"]
+    print(f"\n[*] {len(mercados)} mercados aceptados de {len(MERCADOS)} solicitados")
+
+    bench = construir(b, senales_siempre_largo(b), con_costos=False)
+    spy = b["ret_mercado"]["SPY"].reindex(b["calendario"]).dropna()
 
     resultados = {}
     for nombre_v in list(VARIANTES) + ["Ensamble (voto)"]:
-        port = construir(senales[nombre_v])
+        port = construir(b, b["senales"][nombre_v])
         d = port.to_numpy()
         sag = port[port.index >= SAGRADA].to_numpy()
         por_anio = {str(a): round(float((np.prod(1 + g.to_numpy()) - 1) * 100), 2)

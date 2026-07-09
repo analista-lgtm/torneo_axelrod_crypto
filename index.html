@@ -51,6 +51,7 @@
         <button data-sec="port" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">💼 Portafolio</button>
         <button data-sec="clasicas" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏛️ Clásicas</button>
         <button data-sec="meta" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌐 Meta-Portafolio</button>
+        <button data-sec="inst" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏦 Institucional</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -319,6 +320,29 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN INSTITUCIONAL ==================== -->
+    <section id="sec-inst" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 14: el portafolio institucional</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                La pregunta ya no es "¿TSMOM o Buy &amp; Hold?" sino <b>"¿cuánto de cada uno?"</b>. Si la
+                correlación entre ambos es baja, la mezcla supera en riesgo-ajuste a sus dos componentes por puro
+                efecto de diversificación. Mezclas de 0% a 100% TSMOM-252 con la infraestructura completa del
+                Exp. 13 (18 mercados, paridad de riesgo, costos, vol-targeting).
+            </p>
+        </div>
+        <div id="inst-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="inst-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">La frontera de mezclas (2015-2026)</h2>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-inst"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Equity mensual (capital inicial = 1)</h2>
+            <canvas id="chart-inst" height="110"></canvas>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -400,7 +424,8 @@ async function mostrarSeccion(sec) {
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
                               reps: initReps, virgen: initVirgen, espec: initEspec,
-                              port: initPort, clasicas: initClasicas, meta: initMeta, legado: initLegado };
+                              port: initPort, clasicas: initClasicas, meta: initMeta,
+                              inst: initInst, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -1108,6 +1133,59 @@ async function pintarMeta() {
         },
         options: {
             spanGaps: true,
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Institucional (Exp. 14) ----------------------
+let chartInst = null;
+async function initInst() {
+    const d = await cargar('data/multi_activo/institucional.json');
+    const mejor = d.mezclas.find(m => m.etiqueta === d.mejor_sharpe);
+    const puro_bh = d.mezclas.find(m => m.pct_tsmom === 0);
+    document.getElementById('inst-chips').innerHTML =
+        chip('Correlación diaria TSMOM ↔ B&H', d.correlacion_diaria,
+             Math.abs(d.correlacion_diaria) < 0.3 ? 'pos' : 'text-amber-400') +
+        chip('Mejor mezcla (Sharpe)', d.mejor_sharpe, 'pos') +
+        chip('Sharpe de la mejor', mejor.total.sharpe, 'pos');
+    const diversifica = mejor.pct_tsmom > 0 && mejor.pct_tsmom < 100;
+    const v = diversifica
+        ? ['bg-green-900/40 border-green-700',
+           `✅ La diversificación funciona: la mezcla ${d.mejor_sharpe} logra Sharpe ${mejor.total.sharpe} con drawdown ${mejor.total.max_dd}%, mejor riesgo-ajuste que el B&H puro (Sharpe ${puro_bh.total.sharpe}, DD ${puro_bh.total.max_dd}%). Correlación entre componentes: ${d.correlacion_diaria}.`]
+        : ['bg-amber-900/40 border-amber-700',
+           `⚠️ La mejor mezcla es un extremo (${d.mejor_sharpe}): en esta ventana la combinación no mejora a sus componentes.`];
+    document.getElementById('inst-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('tabla-inst').innerHTML = `
+        <thead><tr><th>Mezcla</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>p (boot)</th><th>Sagrado</th></tr></thead>
+        <tbody>${d.mezclas.map(m => `
+            <tr class="${m.etiqueta === d.mejor_sharpe ? 'font-bold' : ''}">
+            <td>${m.etiqueta}${m.etiqueta === d.mejor_sharpe ? ' 🏆' : ''}</td>
+            <td>${fmtPct(m.total.retorno)}</td><td>${m.total.sharpe}</td>
+            <td>${fmtPct(m.total.max_dd)}</td><td>${m.inferencia.t_stat}</td>
+            <td>${m.inferencia.p_bootstrap}</td><td>${fmtPct(m.sagrado.retorno)}</td></tr>`).join('')}</tbody>`;
+    const paleta = { 0: '#94a3b8', 25: '#0ea5e9', 50: '#22c55e', 75: '#eab308', 100: '#a855f7' };
+    const labels = Object.values(d.curvas)[0].labels;
+    if (chartInst) chartInst.destroy();
+    chartInst = new Chart(document.getElementById('chart-inst'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: d.mezclas.map(m => ({
+                label: m.etiqueta,
+                data: d.curvas[m.etiqueta].valores,
+                borderColor: paleta[m.pct_tsmom],
+                borderWidth: m.etiqueta === d.mejor_sharpe ? 3 : 1.5,
+                pointRadius: 0, tension: 0.2,
+            })),
+        },
+        options: {
             plugins: { legend: { labels: { color: '#cbd5e1' } } },
             scales: {
                 x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },

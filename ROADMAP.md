@@ -94,6 +94,19 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
 * **Lectura honesta:** el B&H diversificado con vol-target rindió más en esta década alcista (+518%, Sharpe 1.02). El valor del trend-following no es "ganarle al B&H en mercados alcistas" sino: drawdown estructuralmente menor, ganancias en años bajistas (2022) y baja correlación — es un **diversificador con ventaja propia estadísticamente robusta**, no un reemplazo del mercado. El período sagrado reciente sigue flojo (+1.2%), coherente con la intermitencia de la anomalía.
 * **Estado de la línea:** con p=0.0005 tras costos y 11 años, la prima de tendencia diversificada queda establecida como el primer (y único) hallazgo positivo validado del laboratorio. Extensiones posibles: allocation combinada TSMOM + B&H (el "portafolio institucional"), rebalanceo mensual, y datos aún más largos por mercado.
 
+### 🏦 Experimento 14: El Portafolio Institucional — Completado
+* **Pregunta:** con la prima de tendencia establecida (Exp. 13), la decisión práctica no es "¿TSMOM o B&H?" sino **"¿cuánto de cada uno?"**. Si la correlación es moderada, la mezcla debe superar en riesgo-ajuste a ambos componentes (el único almuerzo gratis de las finanzas).
+* **Implementación:** `src/institutional_blend.py` (mezclas 0/25/50/75/100% TSMOM-252 vs B&H diversificado, misma infraestructura del Exp. 13), resultados en `data/multi_activo/institucional.json` y pestaña "🏦 Institucional".
+* **Resultados (2015-2026, correlación diaria TSMOM↔B&H = 0.41):**
+  | Mezcla | Retorno | Sharpe | Max DD | t-stat |
+  |---|---|---|---|---|
+  | 100% B&H | +518% | 1.02 | −27.5% | 4.05 |
+  | **25% TSMOM / 75% B&H** 🏆 | +465% | **1.09** | −21.8% | **4.32** |
+  | 50% TSMOM / 50% B&H | +409% | 1.07 | **−17.4%** | 4.25 |
+  | 100% TSMOM | +292% | 0.78 | −21.1% | 3.10 |
+* **Veredicto: la diversificación funciona — el óptimo es interior, no un extremo.** La mezcla 25/75 logra el mejor Sharpe (1.09) y la 50/50 recorta el drawdown de −27.5% a −17.4% manteniendo Sharpe superior al B&H puro. Añadir el trend-following al portafolio pasivo mejora el riesgo-ajuste aunque el TSMOM aislado rinda menos: exactamente lo que predice la teoría de portafolios con correlación 0.41.
+* **Estado del proyecto:** la línea de investigación queda madura y con conclusión práctica accionable. Extensiones futuras: rebalanceo mensual con bandas, replicación independiente externa (en curso con LLM auditor), y actualización periódica de datos.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)
