@@ -60,6 +60,14 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
   * Global: lift 1.46×, Spearman 0.17 — memoria débil, existente, heterogénea.
 * **Conclusión (el giro irónico):** la hipótesis de especialización es correcta en dirección pero invertida en objetivo: **los mercados con más memoria explotable son los índices bursátiles y las tasas, y los que menos tienen son las criptomonedas** — justo donde nació el proyecto. Ningún mercado alcanza el estándar duro (lift ≥ 3), pero SPY y Nikkei quedan cerca, lo que apunta a que la señal aprovechable es la de tendencia/momentum en índices, no los patrones diarios en cripto.
 
+### 💼 Experimento 10: El Portafolio de Supervivientes — Completado
+* **Objetivo (doble pista):** mantener viva la búsqueda universal Y construir un portafolio de especialistas por mercado que venzan el overfitting temporal cada uno en su terreno. Novedad metodológica: **período sagrado** — los últimos 12 meses (2025-07 → 2026-07) no participan en ninguna selección; son el examen final, equivalente a operar en vivo.
+* **Implementación:** `src/portfolio_survivors.py`, resultados en `data/multi_activo/portafolio.json` y pestaña "💼 Portafolio" del dashboard. Selección con 4 cortes walk-forward dentro de la ventana de selección; portafolio ponderado por volatilidad inversa.
+* **Pista A (universales): 0 supervivientes** — con los tests truncados antes del sagrado, ninguna estrategia de régimen es universal en train y test de todos los cortes.
+* **Pista B (especialistas):** 10 de 11 mercados produjeron especialistas que superan a su B&H en todos los cortes de selección (desde 19 en plata hasta 13,643 en petróleo — abundan justo donde el B&H fue plano o negativo, señal de sesgo corto más que de habilidad).
+* **Veredicto del examen sagrado: ❌ EL PORTAFOLIO FALLA.** Retorno −1.71% (Sharpe −0.15) contra +18.51% (Sharpe 1.73) de los mismos pesos en Buy & Hold y +22.24% del S&P 500. Los especialistas seleccionados con todo el rigor walk-forward no sobrevivieron el año que nadie vio.
+* **Cierre del arco científico (Exps. 5-10):** la familia completa de autómatas fijos de 16 estados — universales, especialistas o en portafolio, en cualquier representación probada — **no contiene ventaja explotable que sobreviva a un período genuinamente no visto**. La persistencia débil detectada en índices (Exp. 9, Spearman ≤ 0.41) es real pero insuficiente para seleccionar estrategias individuales ganadoras. Este es el resultado del proyecto: un no-resultado robusto, demostrado con el estándar más alto, y un **tribunal de validación de 4 capas** (multi-activo → walk-forward multi-corte → jurado virgen → período sagrado) listo para cualquier hipótesis futura.
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)

@@ -48,6 +48,7 @@
         <button data-sec="reps" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🔬 Representaciones</button>
         <button data-sec="virgen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌱 Activos Vírgenes</button>
         <button data-sec="espec" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🎯 Especialistas</button>
+        <button data-sec="port" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">💼 Portafolio</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -232,6 +233,33 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN PORTAFOLIO ==================== -->
+    <section id="sec-port" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 10: Portafolio de Supervivientes</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="port-desc">
+                Dos pistas en paralelo: la <b>búsqueda universal</b> (positiva en los 11 mercados de la ventana
+                de selección) y los <b>especialistas por mercado</b> (superan al Buy &amp; Hold de su propio mercado
+                en train y test de todos los cortes). Los supervivientes forman un portafolio ponderado por
+                volatilidad inversa, y todo rinde el examen final en el <b>período sagrado</b> — los últimos 12
+                meses, que ninguna selección tocó jamás.
+            </p>
+        </div>
+        <div id="port-uni" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Especialistas por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4" id="port-crit-espec"></p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-port-espec"></table>
+        </div>
+        <div id="port-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="port-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700" id="panel-port-chart">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Examen sagrado: equity semanal</h2>
+            <p class="text-slate-500 text-xs mb-4">Portafolio de supervivientes vs. los mismos pesos en Buy &amp; Hold y vs. S&amp;P 500, sobre el período que ninguna selección vio (capital inicial = 1).</p>
+            <canvas id="chart-port" height="110"></canvas>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -312,7 +340,8 @@ async function mostrarSeccion(sec) {
     document.getElementById(`sec-${sec}`).classList.remove('hidden');
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
-                              reps: initReps, virgen: initVirgen, espec: initEspec, legado: initLegado };
+                              reps: initReps, virgen: initVirgen, espec: initEspec,
+                              port: initPort, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -746,6 +775,100 @@ async function initEspec() {
     document.getElementById('tabla-espec').innerHTML = `
         <thead><tr><th>Mercado</th><th>Ticker</th><th>Lift promedio</th>
         <th>Spearman train↔test</th><th>Veredicto</th></tr></thead><tbody>${filas}</tbody>`;
+}
+
+// ---------------------- Portafolio (Exp. 10) ----------------------
+let chartPort = null;
+async function initPort() {
+    const d = await cargar('data/multi_activo/portafolio.json');
+    document.getElementById('port-crit-espec').textContent = `Criterio: ${d.criterio_especialista}.`;
+
+    // Pista universal
+    const u = d.universales;
+    const filasUni = u.candidatas.map(c => `
+        <div class="bg-slate-900 rounded-xl p-3 mt-2 text-sm">
+            <span class="adn">${c.ADN}</span> · sagrado:
+            ${Object.entries(c.sagrada).map(([t, r]) => `${nombreDe(t)} ${fmtPct(r)}`).join(' · ')}
+            → ${c.aprueba_sagrada ? '<span class="pos font-bold">✔ APRUEBA el sagrado</span>'
+                                  : '<span class="neg font-bold">✘ falla el sagrado</span>'}
+        </div>`).join('');
+    document.getElementById('port-uni').innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Pista A: búsqueda universal</h2>
+            <p class="text-slate-500 text-xs mb-3">Criterio: ${d.criterio_universal}.</p>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                ${chip('Sobreviven la selección', fmtNum(u.supervivientes_seleccion), u.supervivientes_seleccion > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban los vírgenes', fmtNum(u.aprobadas_virgen), u.aprobadas_virgen > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban el sagrado', fmtNum(u.candidatas.filter(c => c.aprueba_sagrada).length),
+                       u.candidatas.some(c => c.aprueba_sagrada) ? 'pos' : 'neg')}
+            </div>${filasUni}
+        </div>`;
+
+    // Especialistas
+    const filas = Object.entries(d.especialistas).map(([tk, e]) => {
+        const el = e.elegido;
+        return `<tr><td class="font-bold">${e.nombre}</td>
+            <td>${fmtNum(e.sobreviven)}</td>
+            <td>${el ? `<span class="adn">${el.ADN}</span>` : '<span class="text-slate-600">—</span>'}</td>
+            <td>${el ? fmtPct(el.peor_exceso_test) : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.retorno) : '—'}</td>
+            <td>${el ? el.sagrada.sharpe : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.max_dd) : '—'}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-port-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Sobreviven selección</th><th>Elegida (ADN)</th>
+        <th>Peor exceso vs B&H (tests)</th><th>Ret. sagrado</th><th>Sharpe sagrado</th><th>DD sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    // Portafolio en el sagrado
+    const panel = document.getElementById('panel-port-chart');
+    if (!d.portafolio) {
+        document.getElementById('port-chips').innerHTML = '';
+        document.getElementById('port-veredicto').innerHTML =
+            '<div class="bg-red-900/40 border border-red-700 rounded-xl p-4 text-sm">❌ Ningún mercado produjo especialistas supervivientes: no hay portafolio que evaluar.</div>';
+        panel.classList.add('hidden');
+        return;
+    }
+    panel.classList.remove('hidden');
+    const s = d.portafolio.sagrada;
+    document.getElementById('port-chips').innerHTML =
+        chip('Portafolio (sagrado)', `${s.portafolio.retorno}% · Sharpe ${s.portafolio.sharpe} · DD ${s.portafolio.max_dd}%`,
+             s.portafolio.retorno > 0 ? 'pos' : 'neg') +
+        chip('Mismos pesos en B&H', `${s.benchmark_bh.retorno}% · Sharpe ${s.benchmark_bh.sharpe} · DD ${s.benchmark_bh.max_dd}%`) +
+        chip('S&P 500', `${s.spy.retorno}% · Sharpe ${s.spy.sharpe} · DD ${s.spy.max_dd}%`);
+    const gana = s.portafolio.retorno > s.benchmark_bh.retorno && s.portafolio.retorno > 0;
+    const sharpeMejor = s.portafolio.sharpe > s.benchmark_bh.sharpe;
+    let v;
+    if (gana && sharpeMejor) {
+        v = ['bg-green-900/40 border-green-700', `✅ El portafolio de supervivientes aprueba el examen sagrado: ${s.portafolio.retorno}% con Sharpe ${s.portafolio.sharpe}, superando a su benchmark B&H (${s.benchmark_bh.retorno}%, Sharpe ${s.benchmark_bh.sharpe}) en un período que ninguna selección vio.`];
+    } else if (s.portafolio.retorno > 0) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ El portafolio es rentable en el sagrado (${s.portafolio.retorno}%) pero no domina a su benchmark B&H (${s.benchmark_bh.retorno}%). Supervivencia parcial.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ El portafolio pierde en el período sagrado (${s.portafolio.retorno}%): la selección no sobrevivió el examen final.`];
+    }
+    document.getElementById('port-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]} Componentes: ${d.portafolio.componentes.map(c => `${c.nombre} (${(c.peso * 100).toFixed(1)}%)`).join(', ')}.</div>`;
+
+    const c = d.portafolio.curva;
+    if (chartPort) chartPort.destroy();
+    chartPort = new Chart(document.getElementById('chart-port'), {
+        type: 'line',
+        data: {
+            labels: c.labels,
+            datasets: [
+                { label: 'Portafolio de supervivientes', data: c.portafolio, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                { label: 'Mismos pesos en B&H', data: c.benchmark, borderColor: '#94a3b8', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.2 },
+                { label: 'S&P 500', data: c.spy, borderColor: '#0ea5e9', borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 13 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
 }
 
 // ---------------------- BTC legado ----------------------
