@@ -115,8 +115,11 @@ def main():
     os.makedirs("data", exist_ok=True)
     df_n2.to_json("data/censo_completo_n2.json", orient="records", indent=4)
     df_n3.to_json("data/censo_completo_n3.json", orient="records", indent=4)
-    # El archivo N4 completo puede ser pesado, lo guardamos optimizado
-    df_n4.to_parquet("data/censo_completo_n4.parquet", index=False) if 'parquet' in json.__dict__ else df_n4.to_json("data/censo_completo_n4.json", orient="records")
+    # El archivo N4 completo puede ser pesado: Parquet si hay motor disponible, JSON como respaldo
+    try:
+        df_n4.to_parquet("data/censo_completo_n4.parquet", index=False)
+    except ImportError:
+        df_n4.to_json("data/censo_completo_n4.json", orient="records")
     
     # -------------------------------------------------------------
     # PASO 3: APLICAR FILTRO GLOBAL AMBICIOSO (Rentables en TODO)
