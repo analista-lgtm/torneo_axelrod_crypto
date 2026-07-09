@@ -39,6 +39,9 @@ Los scripts forman una tubería — cada uno depende de la salida del anterior:
 | 8 | `src/virgin_validation.py` | Experimento 8: candidatas de régimen ante 5 activos vírgenes (TLT, EEM, Nikkei, plata, USDJPY) — **no aprueban el criterio estricto (lift 0)**; conclusión: ninguna estrategia individual de autómata fijo sobrevive todos los tests | `data/multi_activo/validacion_virgen.json` |
 | 9 | `src/specialist_test.py` | Experimento 9: persistencia local por mercado sin exigencia cruzada (lift + Spearman train↔test) — la memoria explotable está en índices bursátiles (SPY 0.41, Nikkei 0.27) y **no en cripto** (BTC 0.11, ETH −0.11) | `data/multi_activo/especialistas.json` |
 | 10 | `src/portfolio_survivors.py` | Experimento 10: doble pista (universales + especialistas por mercado) con **período sagrado** (últimos 12 meses intocados) — el portafolio de supervivientes **falla el examen sagrado** (−1.7% vs +18.5% B&H); cierre del arco: los autómatas fijos no contienen ventaja explotable | `data/multi_activo/portafolio.json` |
+| 11 | `src/classic_lab.py` | Experimento 11: 28 estrategias clásicas (`src/classic_strategies.py`: TSMOM, SMAs, Donchian, RSI) ante el tribunal — 0 universales, 2 especialistas marginales, portafolio plano en el sagrado. Lección: las ventajas reales son débiles y requieren tests agregados, no supervivencia segmento a segmento | `data/multi_activo/clasicas.json` |
+
+La historia narrativa completa del laboratorio está en `BITACORA.md`; el resumen público en `README.md`.
 
 `src/data_pipeline.py` es la capa estándar de ingesta (Yahoo Finance, misma ventana, misma limpieza y codificación para todos los activos) — cualquier análisis nuevo debe consumir datos a través de ella para mantener la comparabilidad.
 

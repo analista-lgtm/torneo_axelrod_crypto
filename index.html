@@ -49,6 +49,7 @@
         <button data-sec="virgen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌱 Activos Vírgenes</button>
         <button data-sec="espec" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🎯 Especialistas</button>
         <button data-sec="port" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">💼 Portafolio</button>
+        <button data-sec="clasicas" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏛️ Clásicas</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -260,6 +261,33 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN CLÁSICAS ==================== -->
+    <section id="sec-clasicas" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 11: familias clásicas ante el Tribunal</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="cl-desc">
+                En lugar de enumerar 65,536 autómatas, ~30 estrategias de familias con décadas de evidencia
+                académica — <b>momentum (TSMOM), cruces de medias, rupturas Donchian, reversión RSI y filtros de
+                tendencia</b> — se juzgan con la misma arquitectura del Experimento 10: selección walk-forward de
+                4 cortes, doble pista (universales y especialistas) y examen final en el <b>período sagrado</b>.
+                Con solo 30 hipótesis con prior, una superviviente significa mucho más.
+            </p>
+        </div>
+        <div id="cl-uni" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Especialistas por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4" id="cl-crit-espec"></p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-cl-espec"></table>
+        </div>
+        <div id="cl-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="cl-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700" id="panel-cl-chart">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Examen sagrado: equity semanal</h2>
+            <p class="text-slate-500 text-xs mb-4">Portafolio clásico vs. los mismos pesos en Buy &amp; Hold y vs. S&amp;P 500 (capital inicial = 1).</p>
+            <canvas id="chart-clasicas" height="110"></canvas>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -341,7 +369,7 @@ async function mostrarSeccion(sec) {
     const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
                               elite: initElite, comparativa: initComp, walkforward: initWF,
                               reps: initReps, virgen: initVirgen, espec: initEspec,
-                              port: initPort, legado: initLegado };
+                              port: initPort, clasicas: initClasicas, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -857,6 +885,96 @@ async function initPort() {
             labels: c.labels,
             datasets: [
                 { label: 'Portafolio de supervivientes', data: c.portafolio, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                { label: 'Mismos pesos en B&H', data: c.benchmark, borderColor: '#94a3b8', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.2 },
+                { label: 'S&P 500', data: c.spy, borderColor: '#0ea5e9', borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 13 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Clásicas (Exp. 11) ----------------------
+let chartClasicas = null;
+async function initClasicas() {
+    await cargarMeta();
+    const d = await cargar('data/multi_activo/clasicas.json');
+    document.getElementById('cl-crit-espec').textContent = `Criterio: ${d.criterio_especialista}.`;
+
+    const u = d.universales;
+    const filasUni = u.candidatas.map(c => `
+        <div class="bg-slate-900 rounded-xl p-3 mt-2 text-sm">
+            <b>${c.nombre}</b> · sagrado:
+            ${Object.entries(c.sagrada).map(([t, r]) => `${nombreDe(t)} ${fmtPct(r)}`).join(' · ')}
+            → ${c.aprueba_sagrada ? '<span class="pos font-bold">✔ APRUEBA el sagrado</span>'
+                                  : '<span class="neg font-bold">✘ falla el sagrado</span>'}
+        </div>`).join('');
+    document.getElementById('cl-uni').innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Pista A: búsqueda universal</h2>
+            <p class="text-slate-500 text-xs mb-3">Criterio: ${d.criterio_universal}. Universo: ${d.num_estrategias} estrategias (${d.familias}).</p>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
+                ${chip('Sobreviven la selección', fmtNum(u.supervivientes_seleccion), u.supervivientes_seleccion > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban el sagrado', fmtNum(u.candidatas.filter(c => c.aprueba_sagrada).length),
+                       u.candidatas.some(c => c.aprueba_sagrada) ? 'pos' : 'neg')}
+            </div>${filasUni}
+        </div>`;
+
+    const filas = Object.entries(d.especialistas).map(([tk, e]) => {
+        const el = e.elegido;
+        return `<tr><td class="font-bold">${e.nombre}</td>
+            <td>${fmtNum(e.sobreviven)}</td>
+            <td>${el ? el.nombre : '<span class="text-slate-600">—</span>'}</td>
+            <td>${el ? fmtPct(el.peor_exceso_test) : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.retorno) : '—'}</td>
+            <td>${el ? el.sagrada.sharpe : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.max_dd) : '—'}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-cl-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Sobreviven selección</th><th>Elegida</th>
+        <th>Peor exceso vs B&H (tests)</th><th>Ret. sagrado</th><th>Sharpe sagrado</th><th>DD sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    const panel = document.getElementById('panel-cl-chart');
+    if (!d.portafolio) {
+        document.getElementById('cl-chips').innerHTML = '';
+        document.getElementById('cl-veredicto').innerHTML =
+            '<div class="bg-red-900/40 border border-red-700 rounded-xl p-4 text-sm">❌ Ningún mercado produjo especialistas clásicos supervivientes.</div>';
+        panel.classList.add('hidden');
+        return;
+    }
+    panel.classList.remove('hidden');
+    const s = d.portafolio.sagrada;
+    document.getElementById('cl-chips').innerHTML =
+        chip('Portafolio clásico (sagrado)', `${s.portafolio.retorno}% · Sharpe ${s.portafolio.sharpe} · DD ${s.portafolio.max_dd}%`,
+             s.portafolio.retorno > 0 ? 'pos' : 'neg') +
+        chip('Mismos pesos en B&H', `${s.benchmark_bh.retorno}% · Sharpe ${s.benchmark_bh.sharpe} · DD ${s.benchmark_bh.max_dd}%`) +
+        chip('S&P 500', `${s.spy.retorno}% · Sharpe ${s.spy.sharpe} · DD ${s.spy.max_dd}%`);
+    const gana = s.portafolio.retorno > 0 && s.portafolio.sharpe > s.benchmark_bh.sharpe;
+    let v;
+    if (gana && s.portafolio.retorno > s.benchmark_bh.retorno) {
+        v = ['bg-green-900/40 border-green-700', `✅ El portafolio clásico aprueba el examen sagrado: ${s.portafolio.retorno}% (Sharpe ${s.portafolio.sharpe}), superando a su benchmark B&H.`];
+    } else if (s.portafolio.retorno > 0) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Rentable en el sagrado (${s.portafolio.retorno}%, Sharpe ${s.portafolio.sharpe}) pero sin dominar al B&H (${s.benchmark_bh.retorno}%, Sharpe ${s.benchmark_bh.sharpe}). Supervivencia parcial.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ El portafolio clásico pierde en el sagrado (${s.portafolio.retorno}%).`];
+    }
+    document.getElementById('cl-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]} Componentes: ${d.portafolio.componentes.map(c => `${c.nombre} → ${c.estrategia} (${(c.peso * 100).toFixed(1)}%)`).join(' · ')}.</div>`;
+
+    const c = d.portafolio.curva;
+    if (chartClasicas) chartClasicas.destroy();
+    chartClasicas = new Chart(document.getElementById('chart-clasicas'), {
+        type: 'line',
+        data: {
+            labels: c.labels,
+            datasets: [
+                { label: 'Portafolio clásico', data: c.portafolio, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                 { label: 'Mismos pesos en B&H', data: c.benchmark, borderColor: '#94a3b8', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.2 },
                 { label: 'S&P 500', data: c.spy, borderColor: '#0ea5e9', borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0.2 },
             ],
