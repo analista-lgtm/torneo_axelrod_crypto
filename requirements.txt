@@ -1,2 +1,7 @@
 requests
 pandas
+numpy
+yfinance
+arch
+lightgbm
+scikit-learn
