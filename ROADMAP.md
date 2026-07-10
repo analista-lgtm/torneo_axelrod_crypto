@@ -118,6 +118,13 @@ Este proyecto aplica los conceptos de la **Teoría de Juegos de Robert Axelrod (
   5. **Colas sanas:** Sortino 1.94, asimetría **positiva** (+3.4, cola derecha), peor mes −7.7%, 61% de meses positivos.
 * **Estado:** la línea TSMOM + B&H queda validada de punta a punta: significancia estadística tras costos (Exp. 13), óptimo de mezcla interior (Exp. 14), robustez paramétrica, implementabilidad práctica y aprobación del período sagrado (Exp. 15). Pendiente: la replicación independiente externa (en curso) como sello final.
 
+### 🌡️ Tablero de Volatilidad — Fase 1 Completada (línea nueva de investigación)
+* **Motivación:** la volatilidad es la única variable del laboratorio con predecibilidad demostrada (se agrupa en regímenes; R² de 0.5-0.7 a horizonte diario es alcanzable, contra ~0 de la dirección). Nueva línea: monitorearla, modelarla y usarla para mejorar el vol-targeting del portafolio institucional.
+* **Implementación Fase 1 (monitoreo):** `src/vol_monitor.py` + pestaña "🌡️ Volatilidad" del dashboard. `data_pipeline` extendida para conservar OHLC. Métricas por mercado: vol realizada 5/21/63/252d, estimadores eficientes Parkinson y **Yang-Zhang**, EWMA (RiskMetrics λ=0.94), **vol-of-vol**, percentil histórico (semáforo de régimen), estructura temporal 5d/63d (detector de shocks), efecto apalancamiento. Métricas de sistema: correlación media rodante (126d), **absorption ratio** (PCA), % de mercados en vol alta. Implícitas públicas: VIX/OVX/GVZ y prima de riesgo de volatilidad del S&P. Sistema de alertas automáticas.
+* **Fases siguientes (diseñadas, pendientes):**
+  * **Fase 2 — Torneo de modelos de pronóstico:** persistencia y EWMA como varas; **HAR-RV (Corsi 2009) como hipótesis primaria pre-registrada**; GJR-GARCH/EGARCH (efecto apalancamiento); Markov-switching (probabilidad de régimen de crisis); LightGBM con features cross-mercado (spillovers); LSTM solo como reto. Evaluación: QLIKE + walk-forward + test de Diebold-Mariano contra HAR + período sagrado. Regla pre-registrada: un modelo "predice" solo si vence a persistencia Y a HAR fuera de muestra (DM p<0.05).
+  * **Fase 3 — Integración (Exp. 16):** sustituir la vol rodante 63d del vol-targeting por el pronóstico ganador y medir si el Sharpe del 40/60 mejora (Moreira & Muir 2017 sugiere que sí).
+
 ---
 
 ## 🔮 Próximos Pasos (Future Horizon)

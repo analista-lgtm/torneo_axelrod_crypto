@@ -78,8 +78,11 @@ def preparar_activo(ticker, inicio=VENTANA_INICIO, fin=VENTANA_FIN):
     if "Close" not in df.columns and "Adj Close" in df.columns:
         df["Close"] = df["Adj Close"]
 
-    # Saneamiento: nulos, precios no positivos, infinitos y fechas duplicadas
-    df = df[["Date", "Close"]].dropna()
+    # Saneamiento: nulos, precios no positivos, infinitos y fechas duplicadas.
+    # Se conservan Open/High/Low cuando existen (estimadores de volatilidad
+    # tipo Parkinson/Yang-Zhang); el resto del laboratorio solo usa Close.
+    ohlc = [c for c in ("Open", "High", "Low") if c in df.columns]
+    df = df[["Date", "Close"] + ohlc].dropna(subset=["Date", "Close"])
     df = df[np.isfinite(df["Close"]) & (df["Close"] > 0)]
     df["Date"] = pd.to_datetime(df["Date"])
     df = df.drop_duplicates(subset="Date").sort_values("Date").reset_index(drop=True)

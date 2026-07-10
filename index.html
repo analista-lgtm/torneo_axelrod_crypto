@@ -52,6 +52,7 @@
         <button data-sec="clasicas" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏛️ Clásicas</button>
         <button data-sec="meta" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌐 Meta-Portafolio</button>
         <button data-sec="inst" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏦 Institucional</button>
+        <button data-sec="vol" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌡️ Volatilidad</button>
         <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
@@ -364,6 +365,40 @@
         </div>
     </section>
 
+    <!-- ==================== SECCIÓN VOLATILIDAD ==================== -->
+    <section id="sec-vol" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Tablero de Volatilidad (Fase 1)</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                La volatilidad es la única variable del laboratorio con predecibilidad demostrada.
+                Este tablero monitorea la volatilidad realizada multi-horizonte, los estimadores OHLC eficientes
+                (Yang-Zhang, Parkinson), la vol-of-vol, la estructura temporal (shock si vol 5d ≫ vol 63d),
+                el acoplamiento sistémico (correlación media y absorption ratio) y las volatilidades implícitas
+                públicas (VIX/OVX/GVZ) con la prima de riesgo de volatilidad del S&amp;P.
+            </p>
+            <p class="text-slate-500 text-xs mt-2" id="vol-meta"></p>
+        </div>
+        <div id="vol-chips" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4"></div>
+        <div id="vol-alertas" class="mb-6 space-y-2"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Mapa de calor por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4">Volatilidades anualizadas (%). El color del percentil indica el régimen: verde = calma histórica, rojo = extremo. TS = ratio vol 5d/63d (≥1.3 marca shock en curso).</p>
+            <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol"></table>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">Historia de volatilidad (21d)</h2>
+                <div class="flex flex-wrap gap-2 mb-3" id="vol-mercados"></div>
+                <canvas id="chart-vol-mercado" height="170"></canvas>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">Riesgo sistémico</h2>
+                <p class="text-slate-500 text-xs mb-3">Correlación media entre los 18 mercados y absorption ratio (% de varianza en el primer componente). Cuando ambos suben, la diversificación se evapora.</p>
+                <canvas id="chart-vol-sistema" height="170"></canvas>
+            </div>
+        </div>
+    </section>
+
     <!-- ==================== SECCIÓN LEGADO ==================== -->
     <section id="sec-legado" class="seccion hidden">
         <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
@@ -446,7 +481,7 @@ async function mostrarSeccion(sec) {
                               elite: initElite, comparativa: initComp, walkforward: initWF,
                               reps: initReps, virgen: initVirgen, espec: initEspec,
                               port: initPort, clasicas: initClasicas, meta: initMeta,
-                              inst: initInst, legado: initLegado };
+                              inst: initInst, vol: initVol, legado: initLegado };
     try { await inicializadores[sec](); }
     catch (e) {
         document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
@@ -1266,6 +1301,91 @@ async function pintarImpl() {
             scales: {
                 x: { title: { display: true, text: '% del portafolio en TSMOM', color: '#64748b' },
                      ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Volatilidad (Fase 1) ----------------------
+let chartVolMercado = null, chartVolSistema = null;
+function colorPercentil(p) {
+    const r = Math.round(34 + (239 - 34) * (p / 100));
+    const g = Math.round(197 - (197 - 68) * (p / 100));
+    return `background: rgba(${r}, ${g}, 68, 0.35)`;
+}
+async function initVol() {
+    const d = await cargar('data/multi_activo/volatilidad.json');
+    document.getElementById('vol-meta').textContent =
+        `Ventana: ${d.ventana.inicio} → ${d.ventana.fin} · Generado: ${d.generado}`;
+    const sis = d.sistema;
+    const vix = d.implicitas['^VIX'];
+    document.getElementById('vol-chips').innerHTML =
+        chip('Correlación media (126d)', sis.correlacion_actual ?? '—',
+             sis.correlacion_actual > 0.4 ? 'neg' : (sis.correlacion_actual > 0.25 ? 'text-amber-400' : 'pos')) +
+        chip('Absorption ratio', sis.absorption_actual ?? '—',
+             sis.absorption_actual > 0.4 ? 'neg' : 'text-slate-100') +
+        chip('Mercados en vol alta', sis.pct_mercados_vol_alta + '%',
+             sis.pct_mercados_vol_alta >= 40 ? 'neg' : (sis.pct_mercados_vol_alta >= 20 ? 'text-amber-400' : 'pos')) +
+        chip('VIX', vix ? `${vix.actual} (pct ${vix.percentil})` : '—') +
+        chip('Prima de vol S&P (VRP)', d.vrp_spy === null ? '—' : d.vrp_spy + ' pts',
+             d.vrp_spy > 0 ? 'pos' : 'neg');
+    document.getElementById('vol-alertas').innerHTML = d.alertas.length === 0
+        ? '<div class="bg-green-900/30 border border-green-800 rounded-xl p-3 text-sm">✅ Sin alertas: todos los mercados en régimen normal.</div>'
+        : d.alertas.map(a => `<div class="${a.nivel === 'alto' ? 'bg-red-900/40 border-red-700' : 'bg-amber-900/40 border-amber-700'} border rounded-xl p-3 text-sm">⚠️ ${a.texto}</div>`).join('');
+
+    const tickers = Object.keys(d.mercados);
+    document.getElementById('tabla-vol').innerHTML = `
+        <thead><tr><th>Mercado</th><th>5d</th><th>21d</th><th>63d</th><th>252d</th>
+        <th>Yang-Zhang</th><th>EWMA</th><th>Vol-of-vol</th><th>Percentil</th><th>TS 5/63</th><th>Apalanc.</th></tr></thead>
+        <tbody>${tickers.map(t => { const m = d.mercados[t]; return `
+            <tr><td class="font-bold">${m.nombre}</td>
+            <td>${m.vol.v5}</td><td>${m.vol.v21}</td><td>${m.vol.v63}</td><td>${m.vol.v252}</td>
+            <td>${m.yang_zhang21 ?? '—'}</td><td>${m.ewma}</td><td>${m.vol_of_vol ?? '—'}</td>
+            <td style="${colorPercentil(m.percentil)}" class="font-bold">${m.percentil}</td>
+            <td class="${m.ratio_ts >= 1.3 ? 'neg font-bold' : ''}">${m.ratio_ts ?? '—'}${m.ratio_ts >= 1.3 ? ' ⚡' : ''}</td>
+            <td>${m.apalancamiento ?? '—'}</td></tr>`; }).join('')}</tbody>`;
+
+    botones('vol-mercados', tickers.map(t => ({id: t, texto: d.mercados[t].nombre})), 'pill',
+        id => pintarVolMercado(d, id));
+    pintarVolMercado(d, tickers[0]);
+
+    if (chartVolSistema) chartVolSistema.destroy();
+    chartVolSistema = new Chart(document.getElementById('chart-vol-sistema'), {
+        type: 'line',
+        data: {
+            labels: sis.labels,
+            datasets: [
+                { label: 'Correlación media', data: sis.correlacion_media, borderColor: '#eab308',
+                  borderWidth: 2, pointRadius: 0, tension: 0.2 },
+                { label: 'Absorption ratio', data: sis.absorption, borderColor: '#ef4444',
+                  borderWidth: 2, pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 12 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+function pintarVolMercado(d, ticker) {
+    const m = d.mercados[ticker];
+    if (chartVolMercado) chartVolMercado.destroy();
+    chartVolMercado = new Chart(document.getElementById('chart-vol-mercado'), {
+        type: 'line',
+        data: {
+            labels: m.spark.labels,
+            datasets: [{ label: `Vol 21d anualizada de ${m.nombre} (%)`, data: m.spark.valores,
+                         borderColor: '#0ea5e9', borderWidth: 2, pointRadius: 0, tension: 0.2, fill: true,
+                         backgroundColor: 'rgba(14,165,233,0.08)' }],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 12 }, grid: { color: '#1e293b' } },
                 y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
             },
         },
