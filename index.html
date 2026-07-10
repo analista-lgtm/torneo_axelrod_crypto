@@ -385,7 +385,7 @@
             <p class="text-slate-500 text-xs mb-4">Volatilidades anualizadas (%). El color del percentil indica el régimen: verde = calma histórica, rojo = extremo. TS = ratio vol 5d/63d (≥1.3 marca shock en curso).</p>
             <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol"></table>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
                 <h2 class="text-xl font-semibold mb-1 text-slate-200">Historia de volatilidad (21d)</h2>
                 <div class="flex flex-wrap gap-2 mb-3" id="vol-mercados"></div>
@@ -395,6 +395,20 @@
                 <h2 class="text-xl font-semibold mb-1 text-slate-200">Riesgo sistémico</h2>
                 <p class="text-slate-500 text-xs mb-3">Correlación media entre los 18 mercados y absorption ratio (% de varianza en el primer componente). Cuando ambos suben, la diversificación se evapora.</p>
                 <canvas id="chart-vol-sistema" height="170"></canvas>
+            </div>
+        </div>
+        <div id="panel-vol-modelos" class="hidden">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200 mt-2">Fase 2: torneo de modelos de pronóstico</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vol-mod-desc"></p>
+            <div id="vol-mod-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Ranking global (QLIKE promedio: menor = mejor)</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vol-global"></table>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Mejor modelo por mercado</h3>
+                <p class="text-slate-500 text-xs mb-3">QLIKE en el período de selección; DM = test de Diebold-Mariano contra HAR (p&lt;0.05 en negrita significa diferencia real, no ruido).</p>
+                <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol-mercados-mod"></table>
             </div>
         </div>
     </section>
@@ -1315,6 +1329,7 @@ function colorPercentil(p) {
     return `background: rgba(${r}, ${g}, 68, 0.35)`;
 }
 async function initVol() {
+    pintarVolModelos();
     const d = await cargar('data/multi_activo/volatilidad.json');
     document.getElementById('vol-meta').textContent =
         `Ventana: ${d.ventana.inicio} → ${d.ventana.fin} · Generado: ${d.generado}`;
@@ -1390,6 +1405,54 @@ function pintarVolMercado(d, ticker) {
             },
         },
     });
+}
+
+// ---------------------- Torneo de modelos de vol (Fase 2) ----------------------
+async function pintarVolModelos() {
+    const panel = document.getElementById('panel-vol-modelos');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_modelos.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vol-mod-desc').textContent = d.metodologia;
+
+    const mejor = d.mejor_global;
+    const g = d.global;
+    const nMercados = Object.keys(d.por_mercado).length;
+    const ganaMercados = g[mejor].mercados_donde_gana;
+    let v;
+    if (mejor !== 'HIST21' && g[mejor].qlike_prom_sel < g['HIST21'].qlike_prom_sel) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ La volatilidad es predecible: <b>${mejor}</b> gana el torneo (mejor QLIKE en ${ganaMercados} de ${nMercados} mercados, mejor promedio global y mejor en el período sagrado`
+             + (g[mejor].vence_har_dm_significativo !== null ? `, con significancia DM sobre HAR en ${g[mejor].vence_har_dm_significativo} mercados` : '')
+             + `). EWMA es el segundo robusto y barato. LightGBM pierde con claridad: a frecuencia diaria, el ML no supera a la estructura de un GARCH de 4 parámetros.`];
+    } else {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Resultado mixto: revisar el ranking (mejor global: ${mejor}).`];
+    }
+    document.getElementById('vol-mod-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+
+    document.getElementById('tabla-vol-global').innerHTML = `
+        <thead><tr><th>Modelo</th><th>QLIKE selección</th><th>QLIKE sagrado</th>
+        <th>Gana en # mercados</th><th>Vence a HAR (DM p&lt;0.05)</th></tr></thead>
+        <tbody>${d.modelos.map(m => `
+            <tr class="${m === mejor ? 'font-bold' : ''}">
+            <td>${m}${m === mejor ? ' 🏆' : ''}${m === 'HAR' ? ' (primaria)' : ''}</td>
+            <td>${g[m].qlike_prom_sel}</td><td>${g[m].qlike_prom_sag}</td>
+            <td>${g[m].mercados_donde_gana}</td>
+            <td>${g[m].vence_har_dm_significativo === null ? '—' : g[m].vence_har_dm_significativo + ' de ' + nMercados}</td></tr>`).join('')}</tbody>`;
+
+    document.getElementById('tabla-vol-mercados-mod').innerHTML = `
+        <thead><tr><th>Mercado</th>${d.modelos.map(m => `<th>${m}</th>`).join('')}<th>Mejor</th></tr></thead>
+        <tbody>${Object.entries(d.por_mercado).map(([tk, r]) => `
+            <tr><td class="font-bold">${r.nombre}</td>
+            ${d.modelos.map(m => {
+                const q = r.qlike_sel[m];
+                const dm = r.dm_vs_har[m];
+                const sig = dm && dm.p !== null && dm.p < 0.05 && q < r.qlike_sel['HAR'];
+                return `<td class="${r.mejor_sel === m ? 'pos font-bold' : ''}">${q ?? '—'}${sig ? '<b>*</b>' : ''}</td>`;
+            }).join('')}
+            <td class="pos font-bold">${r.mejor_sel}</td></tr>`).join('')}</tbody>`;
 }
 
 // ---------------------- BTC legado ----------------------
