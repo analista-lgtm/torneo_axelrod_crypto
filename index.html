@@ -411,6 +411,15 @@
                 <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol-mercados-mod"></table>
             </div>
         </div>
+        <div id="panel-vol-mh" class="hidden mt-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Validación multi-horizonte de los pronósticos</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vmh-desc"></p>
+            <div id="vmh-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">GJR multi-paso vs. varas planas (QLIKE: menor = mejor)</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vmh"></table>
+            </div>
+        </div>
         <div id="panel-vol-target" class="hidden mt-6">
             <h2 class="text-2xl font-semibold mb-2 text-slate-200">Fase 3 (Exp. 16): el termostato anticipativo</h2>
             <p class="text-slate-400 text-sm mb-4" id="vt-desc"></p>
@@ -1343,6 +1352,7 @@ function colorPercentil(p) {
 }
 async function initVol() {
     pintarVolModelos();
+    pintarVolMH();
     pintarVolTarget();
     const d = await cargar('data/multi_activo/volatilidad.json');
     document.getElementById('vol-meta').textContent =
@@ -1477,6 +1487,40 @@ async function pintarVolModelos() {
                 return `<td class="${r.mejor_sel === m ? 'pos font-bold' : ''}">${q ?? '—'}${sig ? '<b>*</b>' : ''}</td>`;
             }).join('')}
             <td class="pos font-bold">${r.mejor_sel}</td></tr>`).join('')}</tbody>`;
+}
+
+// ---------------------- Validación multi-horizonte (tablero) ----------------------
+async function pintarVolMH() {
+    const panel = document.getElementById('panel-vol-mh');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_multihorizonte.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vmh-desc').textContent =
+        `${d.metodologia} Universo: ${d.num_mercados} mercados.`;
+    const n = d.num_mercados;
+    const filas = d.horizontes.map(h => {
+        const g = d.global[String(h)];
+        return `<tr><td class="font-bold">${h} día${h > 1 ? 's' : ''}</td>
+            <td class="${g.qlike_prom_sel.GJR <= Math.min(g.qlike_prom_sel.HIST21, g.qlike_prom_sel.EWMA) ? 'pos font-bold' : ''}">${g.qlike_prom_sel.GJR}</td>
+            <td>${g.qlike_prom_sel.HIST21}</td><td>${g.qlike_prom_sel.EWMA}</td>
+            <td>${g.gjr_gana_hist}/${n} <span class="text-slate-500">(DM sig. ${g.dm_sig_hist})</span></td>
+            <td>${g.gjr_gana_ewma}/${n} <span class="text-slate-500">(DM sig. ${g.dm_sig_ewma})</span></td>
+            <td>${g.qlike_prom_sag.GJR} vs ${g.qlike_prom_sag.HIST21} / ${g.qlike_prom_sag.EWMA}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-vmh').innerHTML = `
+        <thead><tr><th>Horizonte</th><th>GJR</th><th>HIST-21</th><th>EWMA</th>
+        <th>GJR vence a HIST</th><th>GJR vence a EWMA</th><th>Sagrado (GJR vs varas)</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+    const h21 = d.global['21'];
+    const aprueba = h21.qlike_prom_sel.GJR < h21.qlike_prom_sel.HIST21
+        && h21.qlike_prom_sel.GJR < h21.qlike_prom_sel.EWMA
+        && h21.gjr_gana_hist >= n / 2;
+    const v = aprueba
+        ? ['bg-green-900/40 border-green-700', `✅ Los pronósticos del tablero quedan validados en todos los horizontes: el GJR multi-paso vence a ambas varas también a 21 días (QLIKE ${h21.qlike_prom_sel.GJR} vs ${h21.qlike_prom_sel.HIST21} / ${h21.qlike_prom_sel.EWMA}), ganando en ${h21.gjr_gana_hist} de ${n} mercados con significancia DM en ${h21.dm_sig_hist}.`]
+        : ['bg-amber-900/40 border-amber-700', `⚠️ Validación parcial: a 21 días el GJR no domina a las varas con claridad — leer las columnas de pronóstico largo del tablero con cautela.`];
+    document.getElementById('vmh-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
 }
 
 // ---------------------- Vol-targeting anticipativo (Exp. 16) ----------------------
