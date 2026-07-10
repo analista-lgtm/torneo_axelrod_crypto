@@ -411,6 +411,19 @@
                 <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol-mercados-mod"></table>
             </div>
         </div>
+        <div id="panel-vol-target" class="hidden mt-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Fase 3 (Exp. 16): el termostato anticipativo</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vt-desc"></p>
+            <div id="vt-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">El mismo portafolio 40/60 con tres termostatos</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vt"></table>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Equity mensual (muestra común, capital inicial = 1)</h3>
+                <canvas id="chart-vt" height="110"></canvas>
+            </div>
+        </div>
     </section>
 
     <!-- ==================== SECCIÓN LEGADO ==================== -->
@@ -1330,6 +1343,7 @@ function colorPercentil(p) {
 }
 async function initVol() {
     pintarVolModelos();
+    pintarVolTarget();
     const d = await cargar('data/multi_activo/volatilidad.json');
     document.getElementById('vol-meta').textContent =
         `Ventana: ${d.ventana.inicio} → ${d.ventana.fin} · Generado: ${d.generado}`;
@@ -1453,6 +1467,63 @@ async function pintarVolModelos() {
                 return `<td class="${r.mejor_sel === m ? 'pos font-bold' : ''}">${q ?? '—'}${sig ? '<b>*</b>' : ''}</td>`;
             }).join('')}
             <td class="pos font-bold">${r.mejor_sel}</td></tr>`).join('')}</tbody>`;
+}
+
+// ---------------------- Vol-targeting anticipativo (Exp. 16) ----------------------
+let chartVT = null;
+async function pintarVolTarget() {
+    const panel = document.getElementById('panel-vol-target');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_target_v3.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vt-desc').textContent =
+        `${d.metodologia} Muestra común: ${fmtNum(d.muestra.dias)} días (${d.muestra.desde} → ${d.muestra.hasta}).`;
+    const A = d.variantes.A, B = d.variantes.B, C = d.variantes.C;
+    const mejorAnticipativo = B.total.sharpe >= C.total.sharpe ? B : C;
+    let v;
+    if (mejorAnticipativo.vs_statu_quo.p_mejora < 0.05 && mejorAnticipativo.vs_statu_quo.delta_sharpe > 0) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ El termostato anticipativo mejora el portafolio con significancia: <b>${mejorAnticipativo.etiqueta}</b> gana ΔSharpe ${mejorAnticipativo.vs_statu_quo.delta_sharpe} sobre el rodante (p=${mejorAnticipativo.vs_statu_quo.p_mejora}, bootstrap pareado).`];
+    } else if (mejorAnticipativo.vs_statu_quo.delta_sharpe > 0) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ El anticipativo apunta a mejora (${mejorAnticipativo.etiqueta}: ΔSharpe +${mejorAnticipativo.vs_statu_quo.delta_sharpe}) pero sin significancia (p=${mejorAnticipativo.vs_statu_quo.p_mejora}): con esta muestra no se puede distinguir del azar. El statu quo (rodante 63d) sigue siendo defendible por simplicidad.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ El pronóstico no mejora el vol-targeting en este portafolio: el rodante 63d (ΔSharpe ${mejorAnticipativo.vs_statu_quo.delta_sharpe} para el mejor anticipativo) se mantiene como estándar. Buen pronóstico ≠ mejor cartera: el targeting depende de la vol de mediano plazo, no de la de mañana.`];
+    }
+    document.getElementById('vt-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('tabla-vt').innerHTML = `
+        <thead><tr><th>Termostato</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>Sagrado</th><th>ΔSharpe vs A</th><th>p (mejora)</th></tr></thead>
+        <tbody>${['A', 'B', 'C'].map(k => { const r = d.variantes[k]; return `
+            <tr><td class="font-bold">${r.etiqueta}</td>
+            <td>${fmtPct(r.total.retorno)}</td><td>${r.total.sharpe}</td><td>${fmtPct(r.total.max_dd)}</td>
+            <td>${r.inferencia.t_stat}</td><td>${fmtPct(r.sagrado.retorno)}</td>
+            <td>${r.vs_statu_quo ? (r.vs_statu_quo.delta_sharpe > 0 ? '+' : '') + r.vs_statu_quo.delta_sharpe : '—'}</td>
+            <td>${r.vs_statu_quo ? r.vs_statu_quo.p_mejora : '—'}</td></tr>`; }).join('')}</tbody>`;
+    const paleta = ['#94a3b8', '#22c55e', '#0ea5e9'];
+    const nombres = Object.keys(d.curvas);
+    if (chartVT) chartVT.destroy();
+    chartVT = new Chart(document.getElementById('chart-vt'), {
+        type: 'line',
+        data: {
+            labels: d.curvas[nombres[0]].labels,
+            datasets: nombres.map((n, i) => ({
+                label: n, data: d.curvas[n].valores, borderColor: paleta[i % paleta.length],
+                borderWidth: i === 0 ? 2 : 1.8, borderDash: i === 0 ? [6, 4] : [],
+                pointRadius: 0, tension: 0.2,
+            })),
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
 }
 
 // ---------------------- BTC legado ----------------------

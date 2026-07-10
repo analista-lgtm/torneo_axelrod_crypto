@@ -97,10 +97,9 @@ def senales_siempre_largo(b):
     return {t: pd.Series(1.0, index=b["fechas_m"][t]) for t in b["mercados"]}
 
 
-def construir(b, senal_por_mercado, con_costos=True):
-    """Retornos diarios: paridad de riesgo + costos por rotación + vol-target."""
+def construir_base(b, senal_por_mercado, con_costos=True):
+    """Retornos diarios base: paridad de riesgo + costos, SIN vol-targeting."""
     calendario = b["calendario"]
-    vol_diaria_objetivo = VOL_OBJETIVO_ANUAL / np.sqrt(252)
     pesos_crudos, contrib = {}, {}
     for t in b["mercados"]:
         s = senal_por_mercado[t].reindex(calendario)
@@ -116,11 +115,20 @@ def construir(b, senal_por_mercado, con_costos=True):
     for t in b["mercados"]:
         wn = (pesos_crudos[t] / total_w).where(total_w > 0, 0.0).fillna(0.0)
         base += wn * contrib[t]
-    base = base[total_w > 0]
-    # Vol-targeting causal: vol rodante del propio portafolio, rezagada 1 día
+    return base[total_w > 0]
+
+
+def vol_target_rodante(base):
+    """Vol-targeting clásico: vol rodante 63d del propio portafolio, rezagada 1 día."""
+    vol_diaria_objetivo = VOL_OBJETIVO_ANUAL / np.sqrt(252)
     vol_port = base.rolling(VOL_VENTANA).std().shift(1)
     lev = (vol_diaria_objetivo / vol_port).clip(upper=LEV_MAX).fillna(1.0)
     return lev * base
+
+
+def construir(b, senal_por_mercado, con_costos=True):
+    """Retornos diarios: paridad de riesgo + costos por rotación + vol-target."""
+    return vol_target_rodante(construir_base(b, senal_por_mercado, con_costos))
 
 
 def main():
