@@ -1,0 +1,125 @@
+{
+  "preregistro": "PREREGISTRO_FOREBANK.md",
+  "universo": 103,
+  "ventanas": {
+    "evaluacion": [
+      "2015-07-01",
+      "2025-07-01"
+    ],
+    "sagrado": [
+      "2025-07-01",
+      "2026-07-01"
+    ]
+  },
+  "parametros": {
+    "n_cartera": 16,
+    "costo_por_lado": 0.001
+  },
+  "resultados": {
+    "score_complejo": {
+      "evaluacion": {
+        "retorno_total": 3.2068,
+        "cagr": 0.155,
+        "vol_anual": 0.1865,
+        "sharpe": 0.866,
+        "max_drawdown": -0.2856
+      },
+      "sagrado": {
+        "retorno_total": 0.1408,
+        "cagr": 0.142,
+        "vol_anual": 0.1118,
+        "sharpe": 1.244,
+        "max_drawdown": -0.0806
+      }
+    },
+    "nucleo_simple": {
+      "evaluacion": {
+        "retorno_total": 2.901,
+        "cagr": 0.1463,
+        "vol_anual": 0.1988,
+        "sharpe": 0.787,
+        "max_drawdown": -0.316
+      },
+      "sagrado": {
+        "retorno_total": 0.1517,
+        "cagr": 0.153,
+        "vol_anual": 0.154,
+        "sharpe": 1.001,
+        "max_drawdown": -0.1285
+      }
+    },
+    "spy": {
+      "evaluacion": {
+        "retorno_total": 2.5322,
+        "cagr": 0.1349,
+        "vol_anual": 0.1831,
+        "sharpe": 0.783,
+        "max_drawdown": -0.3372
+      },
+      "sagrado": {
+        "retorno_total": 0.2224,
+        "cagr": 0.2244,
+        "vol_anual": 0.1259,
+        "sharpe": 1.671,
+        "max_drawdown": -0.0888
+      }
+    }
+  },
+  "multi_corte_sharpe_anual": {
+    "2016": {
+      "A": 0.857,
+      "B": 0.786,
+      "SPY": 1.048
+    },
+    "2017": {
+      "A": 3.702,
+      "B": 3.058,
+      "SPY": 2.866
+    },
+    "2018": {
+      "A": 0.332,
+      "B": 0.248,
+      "SPY": -0.233
+    },
+    "2019": {
+      "A": 1.708,
+      "B": 1.93,
+      "SPY": 2.232
+    },
+    "2020": {
+      "A": 0.848,
+      "B": 0.651,
+      "SPY": 0.644
+    },
+    "2021": {
+      "A": 1.652,
+      "B": 1.314,
+      "SPY": 2.133
+    },
+    "2022": {
+      "A": -1.107,
+      "B": -0.757,
+      "SPY": -0.735
+    },
+    "2023": {
+      "A": 1.193,
+      "B": 0.411,
+      "SPY": 1.896
+    },
+    "2024": {
+      "A": 2.178,
+      "B": 2.283,
+      "SPY": 1.882
+    }
+  },
+  "veredicto": {
+    "H1_score_supera_spy": true,
+    "H2_score_supera_nucleo": true,
+    "t_stat_exceso_vs_spy": 0.428,
+    "meses_h1": 119,
+    "t_stat_exceso_vs_nucleo": 0.319,
+    "meses_h2": 119,
+    "anios_A_gana_B": 6,
+    "anios_totales": 9
+  }
+}

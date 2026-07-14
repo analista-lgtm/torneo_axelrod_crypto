@@ -98,3 +98,44 @@ Comunes a las dos variantes activas:
 - Ni una sola variación de N, pesos, umbrales, ventanas o reglas tras ver resultados.
 - No se elegirá "la mejor de varias corridas": hay exactamente una corrida por variante.
 - El sagrado no se usa para decidir entre A y B; solo confirma o desmiente lo ya decidido.
+
+---
+
+## VEREDICTO (añadido después de la corrida única — 2026-07-14)
+
+*Todo lo anterior a esta línea quedó congelado antes de correr. Corrida única de
+`src/forebank_backtest.py`; resultados completos en `data/multi_activo/forebank_backtest.json`.
+103/104 nombres descargados (BK sin datos en Yahoo; descartado del universo).*
+
+**Evaluación 2015-07 → 2025-07 (tras costos):**
+
+| Variante | Sharpe | CAGR | Max DD |
+|---|---|---|---|
+| A — score complejo | **0.866** | 15.50% | −28.56% |
+| B — núcleo simple (12-1 + 200d) | 0.787 | 14.63% | −31.60% |
+| SPY buy & hold | 0.783 | 13.49% | −33.72% |
+
+- **H1 (score > SPY): PASA** nominalmente (t exceso mensual 0.43, n=119 — no significativo;
+  además el sesgo de supervivencia del universo favorece a A, como quedó pre-registrado).
+- **H2 (score > núcleo): PASA** nominalmente (t exceso 0.32, n=119; multi-corte: A gana a B
+  en 6/9 años). La ventaja es pequeña y estadísticamente indistinguible de cero.
+- **Sagrado (2025-07 → 2026-07):** A: Sharpe 1.24, +14.1%, DD −8.1%. B: 1.00, +15.2%,
+  DD −12.9%. SPY: 1.67, +22.2%, DD −8.9%. El score se comportó bien en año no visto; SPY
+  ganó el año (alcista fuerte) — coherente con que la tendencia pierde años individuales.
+
+**Decisión (por la regla pre-comprometida): H2 pasa → se documenta y se CONGELA el score V2.**
+
+Lectura honesta, en el espíritu del laboratorio: lo que este experimento realmente establece
+es que la calibración compleja del score (los ~100 parámetros de B3) **no diluye** la señal
+de tendencia de su núcleo — el temor central de la brecha B3 queda descartado. La ventaja
+adicional de la complejidad es marginal (+0.08 Sharpe, mejor DD en evaluación y en sagrado)
+y no significativa: el score se comporta como su núcleo 12-1 + 200d con un recorte modesto
+de riesgo. Implicaciones operativas:
+
+1. El score V2 queda congelado con esta evidencia; **cualquier recalibración futura de pesos
+   o umbrales requiere un nuevo pre-registro y tribunal completo** (no hay licencia para
+   afinar parámetros: la ventaja medida no lo justifica).
+2. La fuente del riesgo-ajuste del fondo sigue siendo la estructura (core B&H amplio +
+   tendencia + Long/Cash + 1/vol), no la sofisticación del score. Comunicar en ese orden.
+3. Sesgo de supervivencia: los niveles absolutos (CAGR ~15%) NO son proyectables; la única
+   conclusión válida es la relativa entre A, B y su comportamiento de riesgo.
