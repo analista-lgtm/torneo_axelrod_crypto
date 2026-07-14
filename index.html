@@ -2,200 +2,1630 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Quant - Axelrod Expanded Lab</title>
+    <title>Axelrod Quant Lab - Torneo Multi-Activo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdn.getbootstrap.com/v3/css/bootstrap.no-icons.mini.css"> <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
-        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, 
-        .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, 
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing,
         .dataTables_wrapper .dataTables_paginate { color: #cbd5e1; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { color: #cbd5e1 !important; }
         table.dataTable tbody tr { background-color: #1e293b; color: #f8fafc; }
         table.dataTable tbody tr:hover { background-color: #334155; }
-        table.dataTable thead th { background-color: #020617; color: #22c55e; border-bottom: 2px solid #22c55e; }
-        .tab-btn-active { background-color: #22c55e; color: #ffffff; box-shadow: 0 4px 14px rgba(34,197,94,0.4); }
-        .tab-btn-inactive { background-color: #1e293b; color: #94a3b8; }
-        .tab-btn-inactive:hover { background-color: #334155; color: #fff; }
+        table.dataTable thead th { background-color: #020617; color: #22c55e; border-bottom: 2px solid #22c55e; white-space: nowrap; }
+        .nav-active { background-color: #22c55e; color: #fff; box-shadow: 0 4px 14px rgba(34,197,94,0.4); }
+        .nav-inactive { background-color: #1e293b; color: #94a3b8; }
+        .nav-inactive:hover { background-color: #334155; color: #fff; }
+        .pill-active { background-color: #0ea5e9; color: #fff; }
+        .pill-inactive { background-color: #1e293b; color: #94a3b8; }
+        .pill-inactive:hover { background-color: #334155; color: #fff; }
+        .modo-active { background-color: #a855f7; color: #fff; }
+        .modo-inactive { background-color: #1e293b; color: #94a3b8; }
+        .modo-inactive:hover { background-color: #334155; color: #fff; }
+        .adn { font-family: monospace; letter-spacing: 1px; }
+        .pos { color: #22c55e; } .neg { color: #ef4444; }
+        .tabla-comp th { background-color: #020617; color: #22c55e; padding: 8px 12px; text-align: left; white-space: nowrap; }
+        .tabla-comp td { background-color: #1e293b; padding: 8px 12px; border-top: 1px solid #0f172a; white-space: nowrap; }
     </style>
 </head>
-<body class="p-8">
+<body class="p-6">
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-4xl font-bold mb-1 text-green-500">Axelrod Quant Lab</h1>
+    <p class="text-slate-400 mb-6">Torneo evolutivo multi-activo: censo total de estrategias en modos Long/Short y Long/Cash, auditoría anti-overfitting y convergencia universal.</p>
 
-    <div class="max-w-7xl mx-auto">
-        <h1 class="text-4xl font-bold mb-2 text-green-500">Axelrod Crypto Lab - Universo Avanzado</h1>
-        <p class="text-slate-400 mb-6">Laboratorio de simulación cuántica de Teoría de Juegos aplicada a Bitcoin (2021 - 2026)</p>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 border-b border-slate-700 pb-5">
-            <button id="btn_2a" onclick="switchExperiment('2a')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
-                Exp 2A: Clásico N=3 (Long/Cash)
-            </button>
-            <button id="btn_2b" onclick="switchExperiment('2b')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
-                Exp 2B: Clásico N=3 (Long/Short)
-            </button>
-            <button id="btn_3a" onclick="switchExperiment('3a')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
-                Exp 3A: Expandido N=4 (Long/Cash)
-            </button>
-            <button id="btn_3b" onclick="switchExperiment('3b')" class="px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive">
-                Exp 3B: Expandido N=4 (Long/Short)
-            </button>
-        </div>
-
-        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl mb-8 border border-slate-700">
-            <h2 id="chartTitle" class="text-2xl font-semibold mb-4 text-slate-200">Curvas de Rendimiento Absoluto</h2>
-            <canvas id="equityChart" height="110"></canvas>
-        </div>
-
-        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
-            <h2 class="text-2xl font-semibold mb-4 text-slate-200">Explorador de Estrategias y Métricas de Riesgo</h2>
-            <table id="metricsTable" class="display w-full">
-                <thead>
-                    <tr>
-                        <th>Estrategia</th>
-                        <th>Lógica de Decisión (Binaria)</th>
-                        <th>Retorno Absoluto (%)</th>
-                        <th>Sharpe Ratio</th>
-                        <th>Max Drawdown (%)</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
+    <!-- Navegación principal -->
+    <div class="flex flex-wrap gap-2 mb-8 border-b border-slate-700 pb-4">
+        <button data-sec="resumen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📊 Resumen</button>
+        <button data-sec="torneos" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏟️ Torneos por Activo</button>
+        <button data-sec="pools" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🛡️ Anti-Overfitting</button>
+        <button data-sec="elite" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🧬 Élite Universal</button>
+        <button data-sec="comparativa" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⚖️ LS vs LC</button>
+        <button data-sec="walkforward" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">⏳ Walk-Forward</button>
+        <button data-sec="reps" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🔬 Representaciones</button>
+        <button data-sec="virgen" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌱 Activos Vírgenes</button>
+        <button data-sec="espec" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🎯 Especialistas</button>
+        <button data-sec="port" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">💼 Portafolio</button>
+        <button data-sec="clasicas" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏛️ Clásicas</button>
+        <button data-sec="meta" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌐 Meta-Portafolio</button>
+        <button data-sec="inst" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🏦 Institucional</button>
+        <button data-sec="vol" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">🌡️ Volatilidad</button>
+        <button data-sec="legado" class="nav-btn px-4 py-2 rounded-xl font-bold text-sm">📜 BTC Legado (Binance)</button>
     </div>
 
-    <script>
-        let currentChart = null;
-        let dataTableInstance = null;
-        const experiments = ['2a', '2b', '3a', '3b'];
+    <!-- ==================== SECCIÓN RESUMEN ==================== -->
+    <section id="sec-resumen" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Metodología</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Cada activo pasa por la <b>misma tubería estándar de datos</b> (fuente Yahoo Finance, misma ventana temporal,
+                misma limpieza y codificación de estados) para garantizar comparabilidad. El mercado se codifica como memoria
+                binaria de N días (subió = 1, bajó = 0) y se hace competir a <b>todas</b> las estrategias posibles
+                (N=2 → 16, N=3 → 256, N=4 → 65,536) en dos modos: <b>Long/Short</b> (bit 0 = posición corta) y
+                <b>Long/Cash</b> (bit 0 = fuera del mercado), siempre sobre el retorno del día siguiente.
+                El Sharpe se anualiza con 365 días para cripto y 252 para mercados tradicionales.
+            </p>
+            <p class="text-slate-500 text-xs mt-2" id="meta-info"></p>
+        </div>
+        <div id="cards-activos" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </section>
 
-        async function switchExperiment(expId) {
-            // 1. Alternar Clases de Botones Dinámicamente
-            experiments.forEach(id => {
-                const btn = document.getElementById(`btn_${id}`);
-                if (id === expId) {
-                    btn.className = "px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-active";
-                } else {
-                    btn.className = "px-4 py-3 rounded-xl font-bold transition-all text-sm tab-btn-inactive";
-                }
-            });
+    <!-- ==================== SECCIÓN TORNEOS ==================== -->
+    <section id="sec-torneos" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-3" id="torneo-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="torneo-activos"></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="torneo-exps"></div>
+        <div id="torneo-chips" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200" id="torneo-titulo"></h2>
+            <p class="text-slate-500 text-xs mb-4">Top 100 estrategias por retorno absoluto en el activo seleccionado (métricas in-sample).</p>
+            <table id="tabla-torneo" class="display w-full"></table>
+        </div>
+    </section>
 
-            // Actualizar Títulos informativos
-            const titles = {
-                '2a': "Evolución del Capital (Top 10 vs Bottom 10) - Clásico N=3 (Long/Cash)",
-                '2b': "Evolución del Capital (Top 10 vs Bottom 10) - Clásico N=3 (Long/Short)",
-                '3a': "Evolución del Capital (Top 10 vs Bottom 10) - Expandido N=4 (Long/Cash) | 65k Muestras",
-                '3b': "Evolución del Capital (Top 10 vs Bottom 10) - Expandido N=4 (Long/Short) | 65k Muestras"
-            };
-            document.getElementById('chartTitle').innerText = titles[expId];
+    <!-- ==================== SECCIÓN POOLS ==================== -->
+    <section id="sec-pools" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-3" id="pool-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-3" id="pool-activos"></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="pool-exps"></div>
+        <div id="pool-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200" id="pool-titulo"></h2>
+            <p class="text-slate-500 text-xs mb-4" id="pool-criterio"></p>
+            <table id="tabla-pool" class="display w-full"></table>
+        </div>
+    </section>
 
-            // 2. Limpieza de Memoria Preventiva para el Navegador
-            if (dataTableInstance) dataTableInstance.destroy();
-            if (currentChart) currentChart.destroy();
+    <!-- ==================== SECCIÓN ÉLITE ==================== -->
+    <section id="sec-elite" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-3" id="elite-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="elite-exps"></div>
+        <div id="elite-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6"></div>
 
-            // 3. Obtención asíncrona de los archivos de datos agrupados
-            const metricsRes = await fetch(`./data/metrics_${expId}.json`);
-            const metrics = await metricsRes.json();
-            
-            const equityRes = await fetch(`./data/equity_${expId}.json`);
-            const equityData = await equityRes.json();
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Estrategias universales</h2>
+            <p class="text-slate-500 text-xs mb-4" id="elite-criterio"></p>
+            <table id="tabla-elite" class="display w-full"></table>
+        </div>
 
-            // 4. Renderizado eficiente de Filas de la Tabla
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = "";
-            
-            let tableHTML = "";
-            metrics.forEach(m => {
-                tableHTML += `<tr>
-                    <td class="font-bold text-slate-300">${m.Estrategia}</td>
-                    <td class="font-mono text-xs text-slate-400 tracking-tighter break-all">${m.Logica}</td>
-                    <td class="${m.Retorno > 0 ? 'text-green-400' : 'text-red-400'} font-bold">${m.Retorno}%</td>
-                    <td>${m.Sharpe}</td>
-                    <td class="text-red-400">${m.Max_DD}%</td>
-                </tr>`;
-            });
-            tbody.innerHTML = tableHTML;
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">ADN de consenso</h2>
+                <p class="text-slate-500 text-xs mb-4" id="consenso-desc"></p>
+                <div id="consenso-viz" class="space-y-2"></div>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">Familias por similitud</h2>
+                <p class="text-slate-500 text-xs mb-4">Agrupación por distancia de Hamming entre ADNs: estrategias casi idénticas pertenecen a la misma familia (mismo "linaje" de decisión).</p>
+                <div id="familias-viz" class="space-y-3"></div>
+            </div>
+        </div>
 
-            // Reinicializar DataTables con ordenación por Retorno por defecto
-            dataTableInstance = $('#metricsTable').DataTable({
-                "order": [[ 2, "desc" ]],
-                "pageLength": 10,
-                "deferRender": true,
-                "destroy": true
-            });
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6" id="panel-equity-elite">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Curvas de equity de la élite (N=4)</h2>
+            <p class="text-slate-500 text-xs mb-3">Top 5 estrategias universales ejecutadas sobre cada activo vs. Buy &amp; Hold (equity mensual, capital inicial = 1).</p>
+            <div class="flex flex-wrap gap-2 mb-4" id="equity-activos"></div>
+            <canvas id="chart-elite" height="110"></canvas>
+        </div>
 
-            // 5. Configurar el set de curvas para el gráfico
-            metrics.sort((a, b) => b.Retorno - a.Retorno);
-            const top10 = metrics.slice(0, 10).map(m => m.Estrategia);
-            const bottom10 = metrics.slice(-10).map(m => m.Estrategia);
-            
-            const datasets = [];
-            
-            // Inyectar Bitcoin (Línea amarilla de referencia estática)
-            datasets.push({
-                label: 'Buy & Hold (BTC)',
-                data: equityData.datasets['Buy_and_Hold'],
-                borderColor: '#f59e0b',
-                borderWidth: 4,
-                borderDash: [6, 4],
-                fill: false,
-                order: 0
-            });
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Casi universales</h2>
+            <p class="text-slate-500 text-xs mb-4">Positivas en todos los activos menos uno: útiles para diagnosticar qué mercado rompe la generalización.</p>
+            <table id="tabla-casi" class="display w-full"></table>
+        </div>
+    </section>
 
-            // Inyectar el Top 10 de ganadores (Degradados en Verde Esmeralda)
-            top10.forEach((strat, i) => {
-                if(equityData.datasets[strat]) {
-                    datasets.push({
-                        label: `Top ${i+1}: ${strat}`,
-                        data: equityData.datasets[strat],
-                        borderColor: `rgba(16, 185, 129, ${1 - (i * 0.08)})`,
-                        borderWidth: i === 0 ? 3.5 : 1.5,
-                        pointRadius: 0,
-                        fill: false,
-                        order: 1
-                    });
-                }
-            });
+    <!-- ==================== SECCIÓN COMPARATIVA ==================== -->
+    <section id="sec-comparativa" class="seccion hidden">
+        <div class="flex flex-wrap gap-2 mb-6" id="comp-exps"></div>
+        <div id="comp-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
 
-            // Inyectar el Bottom 10 de perdedores (Degradados en Rojo Rubí)
-            bottom10.forEach((strat, i) => {
-                if(equityData.datasets[strat]) {
-                    datasets.push({
-                        label: `Peor ${i+1}: ${strat}`,
-                        data: equityData.datasets[strat],
-                        borderColor: `rgba(239, 68, 68, ${1 - (i * 0.08)})`,
-                        borderWidth: 1,
-                        pointRadius: 0,
-                        fill: false,
-                        order: 2
-                    });
-                }
-            });
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Distribuciones por activo: Long/Short → Long/Cash</h2>
+            <p class="text-slate-500 text-xs mb-4">Cada celda muestra el valor del censo completo en modo Long/Short, la flecha, y el valor en Long/Cash. Verde = Long/Cash mejora esa métrica; rojo = la empeora.</p>
+            <table class="tabla-comp w-full rounded-xl overflow-hidden text-sm" id="tabla-comp-activos"></table>
+        </div>
 
-            // 6. Construir el objeto gráfico final en el lienzo HTML5
-            const ctx = document.getElementById('equityChart').getContext('2d');
-            currentChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: equityData.labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } }
-                    },
-                    plugins: {
-                        legend: { display: false } // Ocultamos la leyenda para no saturar la pantalla con 21 textos
-                    }
-                }
-            });
-        }
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Élite pareada: el mismo ADN en ambos modos</h2>
+            <p class="text-slate-500 text-xs mb-4">Las mejores estrategias universales del modo Long/Short, re-ejecutadas con el mismo ADN en Long/Cash. Métricas agregadas sobre los 6 activos: peor retorno, Sharpe promedio y peor drawdown.</p>
+            <table id="tabla-pareada" class="display w-full"></table>
+        </div>
+    </section>
 
-        // Cargar por defecto el experimento clásico base al inicio
-        window.onload = () => switchExperiment('2a');
-    </script>
+    <!-- ==================== SECCIÓN WALK-FORWARD ==================== -->
+    <section id="sec-walkforward" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Prueba de overfitting temporal</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="wf-desc">
+                La élite universal se selecciona usando <b>únicamente el período de entrenamiento</b> y luego se
+                evalúa en el período de test, que la selección jamás vio. El <b>lift</b> compara su tasa de
+                supervivencia contra la tasa base (fracción de <i>todas</i> las estrategias que resulta universal
+                en el test por azar): lift ≈ 1 significa que la élite no supera al azar (overfitting temporal);
+                lift ≫ 1 significa que la selección contiene señal que persiste en el tiempo.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3" id="wf-modos"></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="wf-exps"></div>
+        <div id="wf-chips" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4"></div>
+        <div id="wf-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Élite del train evaluada en el test</h2>
+            <p class="text-slate-500 text-xs mb-4">Top 20 estrategias universales del período de entrenamiento, ordenadas por su peor retorno en train, con su desempeño posterior en el período de test.</p>
+            <table id="tabla-wf" class="display w-full"></table>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN REPRESENTACIONES ==================== -->
+    <section id="sec-reps" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Fase 1.5: Laboratorio de Representaciones</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="reps-desc">
+                Cada codificación del mercado compite bajo el mismo tribunal: walk-forward con <b>4 cortes
+                temporales distintos</b> en modo Long/Short. Una representación robusta debe producir élites que
+                sobrevivan el futuro sin importar dónde se corte la historia. Los <b>supervivientes totales</b>
+                son estrategias universales en train y test en <i>todos</i> los cortes a la vez — las únicas
+                candidatas a señal real.
+            </p>
+        </div>
+        <div id="reps-cards" class="space-y-6"></div>
+    </section>
+
+    <!-- ==================== SECCIÓN ACTIVOS VÍRGENES ==================== -->
+    <section id="sec-virgen" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 8: el out-of-sample definitivo</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Las candidatas de la representación de régimen (supervivientes de ≥3 de 4 cortes walk-forward)
+                se evalúan en <b>mercados que ningún experimento tocó jamás</b>: bonos, emergentes, Japón, plata
+                y dólar/yen. Si su tasa de aprobación no supera con claridad la tasa base del azar (lift ≫ 1),
+                la señal no generaliza.
+            </p>
+        </div>
+        <div id="virgen-jurado" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
+        <div id="virgen-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="virgen-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Candidatas ante el jurado virgen</h2>
+            <p class="text-slate-500 text-xs mb-4" id="virgen-criterio"></p>
+            <table id="tabla-virgen" class="display w-full"></table>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN ESPECIALISTAS ==================== -->
+    <section id="sec-espec" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 9: ¿existen las especialistas?</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                Hipótesis: los mercados son distintos y una estrategia puede ser rentable <b>solo en el suyo</b>.
+                Esta prueba elimina la exigencia cruzada: las campeonas del train (le ganan al Buy &amp; Hold de su
+                propio mercado) se evalúan únicamente en <b>su mercado</b> en el período de test. El <b>lift</b>
+                mide si repiten mejor que el azar; el <b>Spearman</b> mide si el ranking completo de las 65,536
+                estrategias persiste entre períodos (≈0 = ruido puro, &lt;0 = los ganadores del pasado tienden a
+                perder en el futuro).
+            </p>
+        </div>
+        <div id="espec-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="espec-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Persistencia temporal por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4">Promedios sobre 4 cortes temporales × 2 representaciones (secuencia diaria y régimen), en el propio mercado, sin exigencia cruzada.</p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-espec"></table>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN PORTAFOLIO ==================== -->
+    <section id="sec-port" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 10: Portafolio de Supervivientes</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="port-desc">
+                Dos pistas en paralelo: la <b>búsqueda universal</b> (positiva en los 11 mercados de la ventana
+                de selección) y los <b>especialistas por mercado</b> (superan al Buy &amp; Hold de su propio mercado
+                en train y test de todos los cortes). Los supervivientes forman un portafolio ponderado por
+                volatilidad inversa, y todo rinde el examen final en el <b>período sagrado</b> — los últimos 12
+                meses, que ninguna selección tocó jamás.
+            </p>
+        </div>
+        <div id="port-uni" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Especialistas por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4" id="port-crit-espec"></p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-port-espec"></table>
+        </div>
+        <div id="port-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="port-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700" id="panel-port-chart">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Examen sagrado: equity semanal</h2>
+            <p class="text-slate-500 text-xs mb-4">Portafolio de supervivientes vs. los mismos pesos en Buy &amp; Hold y vs. S&amp;P 500, sobre el período que ninguna selección vio (capital inicial = 1).</p>
+            <canvas id="chart-port" height="110"></canvas>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN CLÁSICAS ==================== -->
+    <section id="sec-clasicas" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 11: familias clásicas ante el Tribunal</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="cl-desc">
+                En lugar de enumerar 65,536 autómatas, ~30 estrategias de familias con décadas de evidencia
+                académica — <b>momentum (TSMOM), cruces de medias, rupturas Donchian, reversión RSI y filtros de
+                tendencia</b> — se juzgan con la misma arquitectura del Experimento 10: selección walk-forward de
+                4 cortes, doble pista (universales y especialistas) y examen final en el <b>período sagrado</b>.
+                Con solo 30 hipótesis con prior, una superviviente significa mucho más.
+            </p>
+        </div>
+        <div id="cl-uni" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Especialistas por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4" id="cl-crit-espec"></p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-cl-espec"></table>
+        </div>
+        <div id="cl-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="cl-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700" id="panel-cl-chart">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Examen sagrado: equity semanal</h2>
+            <p class="text-slate-500 text-xs mb-4">Portafolio clásico vs. los mismos pesos en Buy &amp; Hold y vs. S&amp;P 500 (capital inicial = 1).</p>
+            <canvas id="chart-clasicas" height="110"></canvas>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN META-PORTAFOLIO ==================== -->
+    <section id="sec-meta" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 12: el meta-portafolio estadístico</h2>
+            <p class="text-slate-400 text-sm leading-relaxed" id="meta-desc">
+                Cambio de instrumento: las reglas se fijan <b>a priori desde la literatura</b> (sin selección →
+                sin sesgo de selección) y se aplican a los 11 mercados a la vez con <b>paridad de riesgo</b>.
+                La pregunta ya no es "¿cuál estrategia gana?" sino "¿el agregado diversificado de una señal débil
+                tiene ventaja estadísticamente significativa?" — medida con t-stat y bootstrap por bloques.
+                La variante <b>primaria pre-registrada es TSMOM-252</b>; las secundarias se leen con corrección
+                de Bonferroni.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-6" id="meta-versiones"></div>
+        <div id="meta-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Inferencia estadística por variante</h2>
+            <p class="text-slate-500 text-xs mb-4">Ventana completa 2021-2026 sobre los 11 mercados. p(boot) = probabilidad de que la media diaria sea ≤ 0 (bootstrap por bloques de 10 días, 2,000 remuestreos).</p>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-meta"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Consistencia por año calendario</h2>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-meta-anios"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Equity mensual (capital inicial = 1)</h2>
+            <canvas id="chart-meta" height="110"></canvas>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN INSTITUCIONAL ==================== -->
+    <section id="sec-inst" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Experimento 14: el portafolio institucional</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                La pregunta ya no es "¿TSMOM o Buy &amp; Hold?" sino <b>"¿cuánto de cada uno?"</b>. Si la
+                correlación entre ambos es baja, la mezcla supera en riesgo-ajuste a sus dos componentes por puro
+                efecto de diversificación. Mezclas de 0% a 100% TSMOM-252 con la infraestructura completa del
+                Exp. 13 (18 mercados, paridad de riesgo, costos, vol-targeting).
+            </p>
+        </div>
+        <div id="inst-chips" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4"></div>
+        <div id="inst-veredicto" class="mb-6"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">La frontera de mezclas (2015-2026)</h2>
+            <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-inst"></table>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Equity mensual (capital inicial = 1)</h2>
+            <canvas id="chart-inst" height="110"></canvas>
+        </div>
+        <div id="panel-impl" class="hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-slate-200 mt-2">Experimento 15: implementabilidad y robustez</h2>
+            <div id="impl-chips" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-1 text-slate-200">Sharpe según el peso en TSMOM</h3>
+                    <p class="text-slate-500 text-xs mb-3">Si es una meseta, el óptimo es robusto; si es un pico, es frágil. La línea punteada usa solo la ventana de selección (elección honesta del peso).</p>
+                    <canvas id="chart-impl-grid" height="150"></canvas>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-1 text-slate-200">Crisis alpha y colas</h3>
+                    <p class="text-slate-500 text-xs mb-3">Comportamiento en el peor decil de meses del B&amp;H diversificado, y métricas de cola de la mezcla.</p>
+                    <div id="impl-crisis" class="text-sm space-y-2"></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">¿Y si no rebalanceo a diario?</h3>
+                <p class="text-slate-500 text-xs mb-3">La mezcla con el peso elegido honestamente, rebalanceada entre sleeves a distintas frecuencias.</p>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-impl-reb"></table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN VOLATILIDAD ==================== -->
+    <section id="sec-vol" class="seccion hidden">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Tablero de Volatilidad (Fase 1)</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                La volatilidad es la única variable del laboratorio con predecibilidad demostrada.
+                Este tablero monitorea la volatilidad realizada multi-horizonte, los estimadores OHLC eficientes
+                (Yang-Zhang, Parkinson), la vol-of-vol, la estructura temporal (shock si vol 5d ≫ vol 63d),
+                el acoplamiento sistémico (correlación media y absorption ratio) y las volatilidades implícitas
+                públicas (VIX/OVX/GVZ) con la prima de riesgo de volatilidad del S&amp;P.
+            </p>
+            <p class="text-slate-500 text-xs mt-2" id="vol-meta"></p>
+        </div>
+        <div id="vol-chips" class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4"></div>
+        <div id="vol-alertas" class="mb-6 space-y-2"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Mapa de calor por mercado</h2>
+            <p class="text-slate-500 text-xs mb-4">Volatilidades anualizadas (%). El color del percentil indica el régimen: verde = calma histórica, rojo = extremo. TS = ratio vol 5d/63d (≥1.3 marca shock en curso).</p>
+            <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol"></table>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">Historia de volatilidad (21d)</h2>
+                <div class="flex flex-wrap gap-2 mb-3" id="vol-mercados"></div>
+                <canvas id="chart-vol-mercado" height="170"></canvas>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-1 text-slate-200">Riesgo sistémico</h2>
+                <p class="text-slate-500 text-xs mb-3">Correlación media entre los 18 mercados y absorption ratio (% de varianza en el primer componente). Cuando ambos suben, la diversificación se evapora.</p>
+                <canvas id="chart-vol-sistema" height="170"></canvas>
+            </div>
+        </div>
+        <div id="panel-vol-modelos" class="hidden">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200 mt-2">Fase 2: torneo de modelos de pronóstico</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vol-mod-desc"></p>
+            <div id="vol-mod-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Ranking global (QLIKE promedio: menor = mejor)</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vol-global"></table>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Mejor modelo por mercado</h3>
+                <p class="text-slate-500 text-xs mb-3">QLIKE en el período de selección; DM = test de Diebold-Mariano contra HAR (p&lt;0.05 en negrita significa diferencia real, no ruido).</p>
+                <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden" id="tabla-vol-mercados-mod"></table>
+            </div>
+        </div>
+        <div id="panel-vol-mh" class="hidden mt-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Validación multi-horizonte de los pronósticos</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vmh-desc"></p>
+            <div id="vmh-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">GJR multi-paso vs. varas planas (QLIKE: menor = mejor)</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vmh"></table>
+            </div>
+        </div>
+        <div id="panel-vol-target" class="hidden mt-6">
+            <h2 class="text-2xl font-semibold mb-2 text-slate-200">Fase 3 (Exp. 16): el termostato anticipativo</h2>
+            <p class="text-slate-400 text-sm mb-4" id="vt-desc"></p>
+            <div id="vt-veredicto" class="mb-4"></div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">El mismo portafolio 40/60 con tres termostatos</h3>
+                <table class="tabla-comp w-full text-sm rounded-xl overflow-hidden" id="tabla-vt"></table>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <h3 class="text-lg font-semibold mb-1 text-slate-200">Equity mensual (muestra común, capital inicial = 1)</h3>
+                <canvas id="chart-vt" height="110"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECCIÓN LEGADO ==================== -->
+    <section id="sec-legado" class="seccion hidden">
+        <p class="text-slate-400 text-sm mb-4">Experimentos históricos 2 y 3 sobre Bitcoin con datos de Binance (ver ROADMAP.md).</p>
+        <div class="flex flex-wrap gap-2 mb-6" id="legado-exps"></div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200">Curvas de rendimiento absoluto</h2>
+            <canvas id="chart-legado" height="110"></canvas>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200">Explorador de estrategias</h2>
+            <table id="tabla-legado" class="display w-full"></table>
+        </div>
+    </section>
+</div>
+
+<script>
+// ---------------------- Utilidades ----------------------
+const cacheJSON = {};
+async function cargar(ruta) {
+    if (!(ruta in cacheJSON)) {
+        const r = await fetch(ruta);
+        if (!r.ok) throw new Error(`No se pudo cargar ${ruta} (${r.status})`);
+        cacheJSON[ruta] = await r.json();
+    }
+    return cacheJSON[ruta];
+}
+const fmtPct = v => `<span class="${v >= 0 ? 'pos' : 'neg'}">${Number(v).toLocaleString('es', {maximumFractionDigits: 2})}%</span>`;
+const fmtNum = v => Number(v).toLocaleString('es');
+const flechas = patron => [...patron].map(b => b === '1'
+    ? '<span class="pos">▲</span>' : '<span class="neg">▼</span>').join('');
+const adnHtml = adn => `<span class="adn">${adn}</span>`;
+
+const EXPS = { N2: 'N=2 (16 estrategias)', N3: 'N=3 (256 estrategias)', N4: 'N=4 (65,536 estrategias)' };
+const MODOS = { LS: 'Long/Short', LC: 'Long/Cash' };
+const ACCION_CERO = { LS: 'Short', LC: 'Cash' };
+let META = null;
+let nombreDe = t => t;
+
+function chip(titulo, valor, color = 'text-slate-100') {
+    return `<div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="text-xs text-slate-500 uppercase">${titulo}</div>
+        <div class="text-xl font-bold ${color}">${valor}</div></div>`;
+}
+
+function botones(contId, items, claseSel, alPulsar, activo = null) {
+    const cont = document.getElementById(contId);
+    cont.innerHTML = '';
+    items.forEach(({id, texto}, idx) => {
+        const esActivo = activo === null ? idx === 0 : id === activo;
+        const b = document.createElement('button');
+        b.textContent = texto;
+        b.className = `px-3 py-2 rounded-lg font-semibold text-xs ${esActivo ? claseSel + '-active' : claseSel + '-inactive'}`;
+        b.onclick = () => {
+            cont.querySelectorAll('button').forEach(x => x.className = x.className.replace(claseSel + '-active', claseSel + '-inactive'));
+            b.className = b.className.replace(claseSel + '-inactive', claseSel + '-active');
+            alPulsar(id);
+        };
+        cont.appendChild(b);
+    });
+}
+
+function tablaDT(selector, columns, data, ordenCol = 2) {
+    if ($.fn.DataTable.isDataTable(selector)) $(selector).DataTable().destroy();
+    $(selector).empty();
+    return $(selector).DataTable({
+        data, columns, pageLength: 15, order: [[ordenCol, 'desc']],
+        lengthMenu: [10, 15, 25, 50], destroy: true, autoWidth: false,
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' }
+    });
+}
+
+// ---------------------- Navegación ----------------------
+document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => mostrarSeccion(b.dataset.sec));
+async function mostrarSeccion(sec) {
+    document.querySelectorAll('.seccion').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(b =>
+        b.className = `nav-btn px-4 py-2 rounded-xl font-bold text-sm ${b.dataset.sec === sec ? 'nav-active' : 'nav-inactive'}`);
+    document.getElementById(`sec-${sec}`).classList.remove('hidden');
+    const inicializadores = { resumen: initResumen, torneos: initTorneos, pools: initPools,
+                              elite: initElite, comparativa: initComp, walkforward: initWF,
+                              reps: initReps, virgen: initVirgen, espec: initEspec,
+                              port: initPort, clasicas: initClasicas, meta: initMeta,
+                              inst: initInst, vol: initVol, legado: initLegado };
+    try { await inicializadores[sec](); }
+    catch (e) {
+        document.getElementById(`sec-${sec}`).insertAdjacentHTML('afterbegin',
+            `<div class="bg-red-900/40 border border-red-700 rounded-xl p-4 mb-4 text-sm">⚠️ ${e.message}.
+             ¿Ya ejecutaste <code>python -m src.multi_asset_tournament</code>?</div>`);
+    }
+}
+
+async function cargarMeta() {
+    if (!META) {
+        META = await cargar('data/multi_activo/resumen.json');
+        const mapa = Object.fromEntries(META.activos.map(a => [a.ticker, a.nombre]));
+        nombreDe = t => mapa[t] || t;
+    }
+    return META;
+}
+
+const itemsModo = () => Object.entries(MODOS).map(([id, texto]) => ({id, texto}));
+const itemsExp = () => ['N4', 'N3', 'N2'].map(e => ({id: e, texto: EXPS[e]}));
+
+// ---------------------- Resumen ----------------------
+async function initResumen() {
+    const m = await cargarMeta();
+    document.getElementById('meta-info').textContent =
+        `Ventana de análisis: ${m.ventana.inicio} → ${m.ventana.fin} · Generado: ${m.generado}`;
+    document.getElementById('cards-activos').innerHTML = m.activos.map(a => `
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+            <div class="flex justify-between items-baseline mb-1">
+                <span class="text-lg font-bold text-slate-100">${a.nombre}</span>
+                <span class="text-xs text-slate-500">${a.ticker}</span>
+            </div>
+            <div class="text-xs text-slate-500 mb-3">${a.tipo === 'crypto' ? '🪙 Cripto (anualiza 365d)' : '🏛️ Tradicional (anualiza 252d)'}</div>
+            <div class="text-sm text-slate-400">Buy &amp; Hold: <b>${fmtPct(a.bh_retorno)}</b></div>
+            <div class="text-sm text-slate-400">${fmtNum(a.velas)} velas saneadas</div>
+            <div class="text-xs text-slate-600 mt-1">${a.fecha_inicio} → ${a.fecha_fin}</div>
+        </div>`).join('');
+}
+
+// ---------------------- Torneos por activo ----------------------
+let torneoSel = { activo: null, exp: 'N4', modo: 'LS' };
+async function initTorneos() {
+    const m = await cargarMeta();
+    if (!torneoSel.activo) torneoSel.activo = m.activos[0].ticker;
+    botones('torneo-modos', itemsModo(), 'modo', id => { torneoSel.modo = id; pintarTorneo(); }, torneoSel.modo);
+    botones('torneo-activos', m.activos.map(a => ({id: a.ticker, texto: a.nombre})), 'pill',
+        id => { torneoSel.activo = id; pintarTorneo(); }, torneoSel.activo);
+    botones('torneo-exps', itemsExp(), 'nav', id => { torneoSel.exp = id; pintarTorneo(); }, torneoSel.exp);
+    await pintarTorneo();
+}
+async function pintarTorneo() {
+    const datos = await cargar(`data/multi_activo/torneo_${torneoSel.exp}_${torneoSel.modo}.json`);
+    const d = datos[torneoSel.activo];
+    if (!d) return;
+    const r = d.resumen;
+    document.getElementById('torneo-titulo').textContent =
+        `${nombreDe(torneoSel.activo)} — ${EXPS[torneoSel.exp]} — ${MODOS[torneoSel.modo]}`;
+    document.getElementById('torneo-chips').innerHTML =
+        chip('Estrategias', fmtNum(r.total)) +
+        chip('Positivas', `${fmtNum(r.positivas)} (${r.pct_positivas}%)`, r.pct_positivas >= 50 ? 'pos' : 'neg') +
+        chip('Superan B&H', fmtNum(r.superan_bh)) +
+        chip('B&H del activo', fmtPct(r.bh_retorno)) +
+        chip('Mejor retorno', fmtPct(r.mejor.Retorno), 'pos');
+    tablaDT('#tabla-torneo', [
+        { title: 'ID', data: 'ID' },
+        { title: 'ADN (Lógica)', data: 'ADN', render: adnHtml },
+        { title: 'Retorno (%)', data: 'Retorno', render: fmtPct },
+        { title: 'Sharpe', data: 'Sharpe' },
+        { title: 'Max DD (%)', data: 'Max_DD', render: fmtPct },
+    ], d.top, 2);
+}
+
+// ---------------------- Pools anti-overfitting ----------------------
+let poolSel = { activo: null, exp: 'N4', modo: 'LS' };
+async function initPools() {
+    const m = await cargarMeta();
+    if (!poolSel.activo) poolSel.activo = m.activos[0].ticker;
+    botones('pool-modos', itemsModo(), 'modo', id => { poolSel.modo = id; pintarPool(); }, poolSel.modo);
+    botones('pool-activos', m.activos.map(a => ({id: a.ticker, texto: a.nombre})), 'pill',
+        id => { poolSel.activo = id; pintarPool(); }, poolSel.activo);
+    botones('pool-exps', itemsExp(), 'nav', id => { poolSel.exp = id; pintarPool(); }, poolSel.exp);
+    await pintarPool();
+}
+async function pintarPool() {
+    const datos = await cargar(`data/multi_activo/pools_${poolSel.exp}_${poolSel.modo}.json`);
+    const d = datos[poolSel.activo];
+    if (!d) return;
+    document.getElementById('pool-titulo').textContent =
+        `Pool robusto de ${nombreDe(poolSel.activo)} — ${EXPS[poolSel.exp]} — ${MODOS[poolSel.modo]}`;
+    document.getElementById('pool-criterio').textContent = `Criterio: ${d.criterio}.`;
+    document.getElementById('pool-chips').innerHTML =
+        chip('Campeonas locales', fmtNum(d.campeonas_locales)) +
+        chip('Sobreviven fuera de casa', fmtNum(d.sobreviven), d.sobreviven > 0 ? 'pos' : 'neg') +
+        chip('Tasa de overfitting', d.pct_overfitting === null ? '—' : d.pct_overfitting + '%',
+             d.pct_overfitting !== null && d.pct_overfitting > 90 ? 'neg' : 'text-amber-400') +
+        chip('Mostrando', `Top ${Math.min(50, d.pool.length)}`);
+    const otros = META.activos.map(a => a.ticker).filter(t => t !== poolSel.activo);
+    const cols = [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        { title: `Retorno ${nombreDe(poolSel.activo)} (%)`, data: 'Retorno', render: fmtPct },
+        { title: 'Sharpe local', data: 'Sharpe' },
+        ...otros.map(t => ({ title: `${nombreDe(t)} (%)`, data: r => r.cruce[t], render: fmtPct })),
+        { title: 'Mín. cruce (%)', data: 'min_cruce', render: fmtPct },
+        { title: 'Prom. cruce (%)', data: 'prom_cruce', render: fmtPct },
+    ];
+    tablaDT('#tabla-pool', cols, d.pool, cols.length - 2);
+}
+
+// ---------------------- Élite universal ----------------------
+let eliteSel = { exp: 'N4', modo: 'LS' };
+let chartElite = null;
+async function initElite() {
+    await cargarMeta();
+    botones('elite-modos', itemsModo(), 'modo', id => { eliteSel.modo = id; pintarElite(); }, eliteSel.modo);
+    botones('elite-exps', itemsExp(), 'nav', id => { eliteSel.exp = id; pintarElite(); }, eliteSel.exp);
+    await pintarElite();
+}
+async function pintarElite() {
+    const d = await cargar(`data/multi_activo/elite_${eliteSel.exp}_${eliteSel.modo}.json`);
+    const tickers = META.activos.map(a => a.ticker);
+    const accion0 = ACCION_CERO[eliteSel.modo];
+    document.getElementById('elite-criterio').textContent =
+        `Modo ${MODOS[eliteSel.modo]} · Criterio: ${d.criterio}.`;
+    document.getElementById('consenso-desc').innerHTML =
+        `Para cada estado de mercado (secuencia de días: ▲ subió, ▼ bajó; el día más reciente a la derecha),
+         porcentaje de la élite que responde con posición Long (verde) o ${accion0} (rojo).`;
+    document.getElementById('elite-chips').innerHTML =
+        chip('Universales', fmtNum(d.num_universales), d.num_universales > 0 ? 'pos' : 'neg') +
+        chip('Casi universales (falla 1)', fmtNum(d.num_casi_universales), 'text-amber-400') +
+        chip('Familias de similitud', fmtNum(d.familias.length));
+
+    const colsElite = [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        ...tickers.map(t => ({ title: `${nombreDe(t)} (%)`, data: r => r.retornos[t], render: fmtPct })),
+        { title: 'Peor (%)', data: 'min', render: fmtPct },
+        { title: 'Suma (%)', data: 'suma', render: fmtPct },
+    ];
+    tablaDT('#tabla-elite', colsElite, d.elite, colsElite.length - 2);
+
+    // ADN de consenso
+    document.getElementById('consenso-viz').innerHTML = d.consenso.length === 0
+        ? '<p class="text-slate-500 text-sm">Sin élite universal en este experimento.</p>'
+        : d.consenso.map(c => `
+            <div class="flex items-center gap-3 text-sm">
+                <span class="w-24 text-right">${flechas(c.patron)}</span>
+                <div class="flex-1 bg-slate-900 rounded h-4 overflow-hidden">
+                    <div class="h-4 ${c.pct_long >= 50 ? 'bg-green-500' : 'bg-red-500'}" style="width:${Math.max(c.pct_long, 100 - c.pct_long)}%"></div>
+                </div>
+                <span class="w-36 text-xs text-slate-400">${c.pct_long >= 50 ? c.pct_long + '% Long' : (100 - c.pct_long).toFixed(1) + '% ' + accion0}</span>
+            </div>`).join('');
+
+    // Familias
+    document.getElementById('familias-viz').innerHTML = d.familias.length === 0
+        ? '<p class="text-slate-500 text-sm">Sin familias detectadas.</p>'
+        : d.familias.map((f, i) => `
+            <div class="bg-slate-900 rounded-xl p-3">
+                <div class="text-xs text-slate-500 mb-1">Familia ${i + 1} · ${f.miembros} miembro(s) · representante:</div>
+                <div>${adnHtml(f.representante)}</div>
+            </div>`).join('');
+
+    // Casi universales
+    tablaDT('#tabla-casi', [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        ...tickers.map(t => ({ title: `${nombreDe(t)} (%)`, data: r => r.retornos[t], render: fmtPct })),
+        { title: 'Activo que falla', data: 'falla', render: t => nombreDe(t) },
+    ], d.casi_universales, 1);
+
+    // Curvas de equity: solo existen para N=4 y si hubo élite en el modo
+    const panel = document.getElementById('panel-equity-elite');
+    panel.classList.add('hidden');
+    if (eliteSel.exp !== 'N4' || d.num_universales === 0) return;
+    try {
+        const eq = await cargar(`data/multi_activo/equity_elite_${eliteSel.modo}.json`);
+        panel.classList.remove('hidden');
+        const activos = Object.keys(eq.curvas);
+        botones('equity-activos', activos.map(t => ({id: t, texto: nombreDe(t)})), 'pill',
+            id => pintarEquityElite(eq, id));
+        pintarEquityElite(eq, activos[0]);
+    } catch (e) { /* sin curvas para este modo */ }
+}
+function pintarEquityElite(eq, ticker) {
+    const paleta = ['#94a3b8', '#22c55e', '#0ea5e9', '#eab308', '#f472b6', '#a78bfa'];
+    const datasets = Object.entries(eq.curvas[ticker]).map(([nombre, valores], i) => ({
+        label: nombre === 'Buy_and_Hold' ? 'Buy & Hold' : nombre,
+        data: valores, borderColor: paleta[i % paleta.length],
+        borderWidth: nombre === 'Buy_and_Hold' ? 3 : 1.5,
+        borderDash: nombre === 'Buy_and_Hold' ? [6, 4] : [],
+        pointRadius: 0, tension: 0.2,
+    }));
+    if (chartElite) chartElite.destroy();
+    chartElite = new Chart(document.getElementById('chart-elite'), {
+        type: 'line',
+        data: { labels: eq.labels[ticker], datasets },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { type: 'logarithmic', ticks: { color: '#64748b' }, grid: { color: '#1e293b' },
+                     title: { display: true, text: 'Equity (log)', color: '#64748b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Comparativa LS vs LC ----------------------
+let compSel = { exp: 'N4' };
+async function initComp() {
+    await cargarMeta();
+    botones('comp-exps', itemsExp(), 'nav', id => { compSel.exp = id; pintarComp(); }, compSel.exp);
+    await pintarComp();
+}
+function celdaComp(ls, lc, mayorEsMejor = true) {
+    const mejora = mayorEsMejor ? lc > ls : lc < ls;
+    const igual = lc === ls;
+    const color = igual ? 'text-slate-400' : (mejora ? 'pos' : 'neg');
+    return `<td><span class="text-slate-400">${Number(ls).toLocaleString('es')}</span>
+            <span class="${color}"> → ${Number(lc).toLocaleString('es')}</span></td>`;
+}
+async function pintarComp() {
+    const d = await cargar(`data/multi_activo/comparativo_${compSel.exp}.json`);
+    document.getElementById('comp-chips').innerHTML =
+        chip('Experimento', EXPS[compSel.exp]) +
+        chip('Élite universal LS', fmtNum(d.elite.LS), d.elite.LS > 0 ? 'pos' : 'neg') +
+        chip('Élite universal LC', fmtNum(d.elite.LC), d.elite.LC > 0 ? 'pos' : 'neg') +
+        chip('Cambio en la élite', (d.elite.LC - d.elite.LS >= 0 ? '+' : '') + fmtNum(d.elite.LC - d.elite.LS),
+             d.elite.LC >= d.elite.LS ? 'pos' : 'neg');
+
+    const filas = Object.entries(d.activos).map(([t, m]) => `
+        <tr>
+            <td class="font-bold">${nombreDe(t)}</td>
+            ${celdaComp(m.LS.pct_positivas, m.LC.pct_positivas)}
+            ${celdaComp(m.LS.mediana_retorno, m.LC.mediana_retorno)}
+            ${celdaComp(m.LS.mejor_retorno, m.LC.mejor_retorno)}
+            ${celdaComp(m.LS.mediana_sharpe, m.LC.mediana_sharpe)}
+            ${celdaComp(m.LS.mediana_dd, m.LC.mediana_dd, false)}
+        </tr>`).join('');
+    document.getElementById('tabla-comp-activos').innerHTML = `
+        <thead><tr>
+            <th>Activo</th><th>% positivas</th><th>Mediana retorno (%)</th>
+            <th>Mejor retorno (%)</th><th>Mediana Sharpe</th><th>Mediana Max DD (%)</th>
+        </tr></thead><tbody>${filas}</tbody>`;
+
+    tablaDT('#tabla-pareada', [
+        { title: 'ADN (élite LS)', data: 'ADN', render: adnHtml },
+        { title: 'Peor retorno LS (%)', data: r => r.LS.min_ret, render: fmtPct },
+        { title: 'Peor retorno LC (%)', data: r => r.LC.min_ret, render: fmtPct },
+        { title: 'Sharpe prom. LS', data: r => r.LS.prom_sharpe },
+        { title: 'Sharpe prom. LC', data: r => r.LC.prom_sharpe },
+        { title: 'Peor DD LS (%)', data: r => r.LS.peor_dd, render: fmtPct },
+        { title: 'Peor DD LC (%)', data: r => r.LC.peor_dd, render: fmtPct },
+    ], d.pareada, 1);
+}
+
+// ---------------------- Walk-Forward ----------------------
+let wfSel = { exp: 'N4', modo: 'LS' };
+async function initWF() {
+    await cargarMeta();
+    botones('wf-modos', itemsModo(), 'modo', id => { wfSel.modo = id; pintarWF(); }, wfSel.modo);
+    botones('wf-exps', itemsExp(), 'nav', id => { wfSel.exp = id; pintarWF(); }, wfSel.exp);
+    await pintarWF();
+}
+async function pintarWF() {
+    const wf = await cargar('data/multi_activo/walkforward.json');
+    const d = wf.resultados[wfSel.exp][wfSel.modo];
+    const tickers = META.activos.map(a => a.ticker);
+    document.getElementById('wf-desc').innerHTML = `
+        La élite universal se selecciona usando <b>únicamente el período de entrenamiento</b>
+        (hasta ${wf.corte}) y luego se evalúa en el período de test (${wf.corte} en adelante),
+        que la selección jamás vio. El <b>lift</b> compara su tasa de supervivencia contra la tasa
+        base (fracción de <i>todas</i> las estrategias que resulta universal en el test por azar):
+        lift ≈ 1 significa que la élite no supera al azar (overfitting temporal); lift ≫ 1 significa
+        que la selección contiene señal que persiste en el tiempo.`;
+    const sinElite = d.train_universales === 0;
+    document.getElementById('wf-chips').innerHTML =
+        chip('Universales en train', fmtNum(d.train_universales), d.train_universales > 0 ? 'pos' : 'neg') +
+        chip('Sobreviven en test', sinElite ? '—' : fmtNum(d.sobreviven), d.sobreviven > 0 ? 'pos' : 'neg') +
+        chip('% supervivencia', sinElite ? '—' : d.pct_supervivencia + '%') +
+        chip('Tasa base (azar)', d.base_rate_test_pct + '%') +
+        chip('LIFT', sinElite || d.lift === null ? '—' : d.lift + '×',
+             d.lift >= 3 ? 'pos' : (d.lift >= 1.5 ? 'text-amber-400' : 'neg'));
+    let veredicto = '';
+    if (sinElite) {
+        veredicto = ['bg-slate-800 border-slate-700', 'Sin élite universal en el período de train para este experimento y modo.'];
+    } else if (d.lift === null) {
+        veredicto = ['bg-amber-900/40 border-amber-700', 'Tasa base cero en el test: no hay referencia de azar para calcular el lift.'];
+    } else if (d.lift >= 3) {
+        veredicto = ['bg-green-900/40 border-green-700',
+            `✅ La élite del train sobrevive el test a <b>${d.lift}×</b> la tasa del azar: hay señal que persiste en el tiempo. Mediana del peor retorno en test: élite ${d.mediana_min_test_elite}% vs ${d.mediana_min_test_todas}% del universo completo.`];
+    } else if (d.lift >= 1.5) {
+        veredicto = ['bg-amber-900/40 border-amber-700',
+            `⚠️ Señal débil: la élite supera al azar (${d.lift}×) pero sin margen contundente. Interpretar con cautela.`];
+    } else {
+        veredicto = ['bg-red-900/40 border-red-700',
+            `❌ Overfitting temporal: la élite del train no sobrevive el test mejor que el azar (${d.lift}×).`];
+    }
+    document.getElementById('wf-veredicto').innerHTML =
+        `<div class="${veredicto[0]} border rounded-xl p-4 text-sm">${veredicto[1]}</div>`;
+    tablaDT('#tabla-wf', [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        { title: 'Peor ret. train (%)', data: 'min_train', render: fmtPct },
+        { title: 'Peor ret. test (%)', data: 'min_test', render: fmtPct },
+        { title: '¿Sobrevive?', data: 'sobrevive', render: v => v
+            ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
+        ...tickers.map(t => ({ title: `${nombreDe(t)} test (%)`, data: r => r.retornos_test[t], render: fmtPct })),
+    ], d.top, 1);
+}
+
+// ---------------------- Representaciones (Fase 1.5) ----------------------
+async function initReps() {
+    await cargarMeta();
+    const d = await cargar('data/multi_activo/representaciones.json');
+    const tickers = META.activos.map(a => a.ticker);
+    document.getElementById('reps-cards').innerHTML =
+        Object.entries(d.representaciones).map(([id, r]) => {
+            const lift = r.lift_promedio;
+            const veredicto = r.supervivientes_totales > 0 && lift >= 3
+                ? ['border-green-700', `✅ Candidata: lift promedio ${lift}× y ${r.supervivientes_totales} superviviente(s) en todos los cortes.`]
+                : (lift !== null && lift >= 1.5
+                    ? ['border-amber-700', `⚠️ Señal débil (lift promedio ${lift}×${r.supervivientes_totales > 0 ? `, ${r.supervivientes_totales} supervivientes` : ', sin supervivientes totales'}). Insuficiente.`]
+                    : ['border-red-700', `❌ Descartada: lift promedio ${lift === null ? '—' : lift + '×'}, ${r.supervivientes_totales} supervivientes en todos los cortes.`]);
+            const filasCortes = r.cortes.map(c => !c.valido
+                ? `<tr><td>${c.corte}</td><td colspan="5" class="text-slate-500">datos insuficientes</td></tr>`
+                : `<tr><td>${c.corte}</td><td>${fmtNum(c.train_universales)}</td>
+                     <td>${fmtNum(c.sobreviven)}</td><td>${c.base_rate_pct}%</td>
+                     <td>${c.pct_supervivencia === null ? '—' : c.pct_supervivencia + '%'}</td>
+                     <td class="font-bold ${c.lift >= 3 ? 'pos' : (c.lift >= 1.5 ? 'text-amber-400' : 'neg')}">${c.lift === null ? '—' : c.lift + '×'}</td></tr>`).join('');
+            const tablaSup = r.supervivientes.length === 0 ? '' : `
+                <div class="mt-4 overflow-x-auto">
+                    <div class="text-sm font-semibold text-slate-300 mb-2">Supervivientes totales (retornos ventana completa):</div>
+                    <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden">
+                        <thead><tr><th>ADN</th>${tickers.map(t => `<th>${nombreDe(t)}</th>`).join('')}<th>Peor</th></tr></thead>
+                        <tbody>${r.supervivientes.map(s => `<tr><td class="adn">${s.ADN}</td>
+                            ${tickers.map(t => `<td>${fmtPct(s.retornos[t])}</td>`).join('')}
+                            <td class="font-bold">${fmtPct(s.min)}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>`;
+            return `
+            <div class="bg-slate-800 p-6 rounded-2xl border ${veredicto[0]}">
+                <div class="flex flex-wrap justify-between items-baseline mb-1 gap-2">
+                    <h3 class="text-xl font-bold text-slate-100">${r.nombre}</h3>
+                    <span class="text-xs text-slate-500">${fmtNum(r.total_estrategias)} estrategias · ${r.n_estados} estados</span>
+                </div>
+                <p class="text-slate-500 text-xs mb-3">Hipótesis: ${r.hipotesis}</p>
+                <div class="text-sm mb-4">${veredicto[1]}</div>
+                <div class="overflow-x-auto">
+                    <table class="tabla-comp w-full text-xs rounded-xl overflow-hidden">
+                        <thead><tr><th>Corte</th><th>Train-universales</th><th>Sobreviven test</th>
+                        <th>Tasa base</th><th>% supervivencia</th><th>Lift</th></tr></thead>
+                        <tbody>${filasCortes}</tbody>
+                    </table>
+                </div>
+                ${tablaSup}
+            </div>`;
+        }).join('');
+}
+
+// ---------------------- Activos vírgenes (Exp. 8) ----------------------
+async function initVirgen() {
+    const d = await cargar('data/multi_activo/validacion_virgen.json');
+    const nombreV = Object.fromEntries(d.jurado.map(a => [a.ticker, a.nombre]));
+    document.getElementById('virgen-jurado').innerHTML = d.jurado.map(a => `
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <div class="text-sm font-bold text-slate-100">${a.nombre}</div>
+            <div class="text-xs text-slate-500">${a.ticker} · ${fmtNum(a.velas)} velas</div>
+            <div class="text-xs text-slate-400 mt-1">B&H: ${fmtPct(a.bh_retorno)}</div>
+        </div>`).join('');
+    document.getElementById('virgen-chips').innerHTML =
+        chip('Candidatas (≥3/4 cortes)', fmtNum(d.num_candidatas)) +
+        chip('Aprueban el jurado', `${fmtNum(d.aprueban)} (${d.tasa_candidatas_pct}%)`,
+             d.aprueban > 0 ? 'pos' : 'neg') +
+        chip('Tasa base (azar)', d.base_rate_pct + '%') +
+        chip('LIFT', d.lift === null ? '—' : d.lift + '×',
+             d.lift >= 3 ? 'pos' : (d.lift >= 1.5 ? 'text-amber-400' : 'neg'));
+    let v;
+    if (d.lift !== null && d.lift >= 3 && d.aprueban > 0) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ Las candidatas aprueban el jurado virgen a <b>${d.lift}×</b> la tasa del azar: la señal de régimen generaliza a mercados nunca vistos.`];
+    } else if (d.lift !== null && d.lift >= 1.5) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ Generalización débil (lift ${d.lift}×). La señal existe pero no con la contundencia exigida.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ La señal de régimen NO generaliza: las candidatas no superan al azar en mercados vírgenes (lift ${d.lift === null ? '—' : d.lift + '×'}).`];
+    }
+    document.getElementById('virgen-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('virgen-criterio').textContent =
+        `Candidatas: ${d.criterio_candidatas}. Aprobación: ${d.criterio_aprobacion}.`;
+    const tickersV = d.jurado.map(a => a.ticker);
+    tablaDT('#tabla-virgen', [
+        { title: 'ADN', data: 'ADN', render: adnHtml },
+        { title: 'Cortes WF', data: 'pases_walkforward', render: p => `${p}/4` },
+        ...tickersV.map(t => ({ title: `${nombreV[t]} (%)`, data: r => r.retornos[t], render: fmtPct })),
+        { title: 'Peor (%)', data: 'min', render: fmtPct },
+        { title: '¿Aprueba?', data: 'aprueba', render: a => a
+            ? '<span class="pos">✔ sí</span>' : '<span class="neg">✘ no</span>' },
+    ], d.candidatas, 1);
+}
+
+// ---------------------- Especialistas (Exp. 9) ----------------------
+async function initEspec() {
+    const d = await cargar('data/multi_activo/especialistas.json');
+    const g = d.global;
+    document.getElementById('espec-chips').innerHTML =
+        chip('Mercados evaluados', fmtNum(Object.keys(d.mercados).length)) +
+        chip('Cortes × Reps', `${d.cortes.length} × ${Object.keys(d.representaciones).length}`) +
+        chip('Lift promedio global', g.lift_promedio + '×',
+             g.lift_promedio >= 3 ? 'pos' : (g.lift_promedio >= 1.5 ? 'text-amber-400' : 'neg')) +
+        chip('Spearman promedio global', g.spearman_promedio,
+             g.spearman_promedio > 0.2 ? 'pos' : (g.spearman_promedio > 0.05 ? 'text-amber-400' : 'neg'));
+    let v;
+    if (g.lift_promedio >= 3 && g.spearman_promedio > 0.2) {
+        v = ['bg-green-900/40 border-green-700', '✅ La especialización existe: las campeonas locales persisten en su propio mercado.'];
+    } else if (g.lift_promedio >= 1.5 || g.spearman_promedio > 0.1) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Persistencia local débil (lift ${g.lift_promedio}×, Spearman ${g.spearman_promedio}): alguna memoria existe, pero insuficiente para explotarla con confianza.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ Las especialistas tampoco persisten: incluso sin exigencia cruzada, las campeonas de cada mercado no repiten en su propio futuro mejor que el azar (lift ${g.lift_promedio}×, Spearman ${g.spearman_promedio}).`];
+    }
+    document.getElementById('espec-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    const filas = Object.entries(d.mercados)
+        .sort((a, b) => (b[1].lift_promedio ?? -1) - (a[1].lift_promedio ?? -1))
+        .map(([tk, m]) => {
+            const l = m.lift_promedio, s = m.spearman_promedio;
+            const cl = l >= 3 ? 'pos' : (l >= 1.5 ? 'text-amber-400' : 'neg');
+            const cs = s > 0.2 ? 'pos' : (s > 0.05 ? 'text-amber-400' : 'neg');
+            return `<tr><td class="font-bold">${m.nombre}</td><td class="text-slate-500">${tk}</td>
+                <td class="font-bold ${cl}">${l === null ? '—' : l + '×'}</td>
+                <td class="font-bold ${cs}">${s === null ? '—' : s}</td>
+                <td>${l >= 3 && s > 0.2 ? '✅ persiste' : (l >= 1.5 ? '⚠️ débil' : '❌ no persiste')}</td></tr>`;
+        }).join('');
+    document.getElementById('tabla-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Ticker</th><th>Lift promedio</th>
+        <th>Spearman train↔test</th><th>Veredicto</th></tr></thead><tbody>${filas}</tbody>`;
+}
+
+// ---------------------- Portafolio (Exp. 10) ----------------------
+let chartPort = null;
+async function initPort() {
+    const d = await cargar('data/multi_activo/portafolio.json');
+    document.getElementById('port-crit-espec').textContent = `Criterio: ${d.criterio_especialista}.`;
+
+    // Pista universal
+    const u = d.universales;
+    const filasUni = u.candidatas.map(c => `
+        <div class="bg-slate-900 rounded-xl p-3 mt-2 text-sm">
+            <span class="adn">${c.ADN}</span> · sagrado:
+            ${Object.entries(c.sagrada).map(([t, r]) => `${nombreDe(t)} ${fmtPct(r)}`).join(' · ')}
+            → ${c.aprueba_sagrada ? '<span class="pos font-bold">✔ APRUEBA el sagrado</span>'
+                                  : '<span class="neg font-bold">✘ falla el sagrado</span>'}
+        </div>`).join('');
+    document.getElementById('port-uni').innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Pista A: búsqueda universal</h2>
+            <p class="text-slate-500 text-xs mb-3">Criterio: ${d.criterio_universal}.</p>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                ${chip('Sobreviven la selección', fmtNum(u.supervivientes_seleccion), u.supervivientes_seleccion > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban los vírgenes', fmtNum(u.aprobadas_virgen), u.aprobadas_virgen > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban el sagrado', fmtNum(u.candidatas.filter(c => c.aprueba_sagrada).length),
+                       u.candidatas.some(c => c.aprueba_sagrada) ? 'pos' : 'neg')}
+            </div>${filasUni}
+        </div>`;
+
+    // Especialistas
+    const filas = Object.entries(d.especialistas).map(([tk, e]) => {
+        const el = e.elegido;
+        return `<tr><td class="font-bold">${e.nombre}</td>
+            <td>${fmtNum(e.sobreviven)}</td>
+            <td>${el ? `<span class="adn">${el.ADN}</span>` : '<span class="text-slate-600">—</span>'}</td>
+            <td>${el ? fmtPct(el.peor_exceso_test) : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.retorno) : '—'}</td>
+            <td>${el ? el.sagrada.sharpe : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.max_dd) : '—'}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-port-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Sobreviven selección</th><th>Elegida (ADN)</th>
+        <th>Peor exceso vs B&H (tests)</th><th>Ret. sagrado</th><th>Sharpe sagrado</th><th>DD sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    // Portafolio en el sagrado
+    const panel = document.getElementById('panel-port-chart');
+    if (!d.portafolio) {
+        document.getElementById('port-chips').innerHTML = '';
+        document.getElementById('port-veredicto').innerHTML =
+            '<div class="bg-red-900/40 border border-red-700 rounded-xl p-4 text-sm">❌ Ningún mercado produjo especialistas supervivientes: no hay portafolio que evaluar.</div>';
+        panel.classList.add('hidden');
+        return;
+    }
+    panel.classList.remove('hidden');
+    const s = d.portafolio.sagrada;
+    document.getElementById('port-chips').innerHTML =
+        chip('Portafolio (sagrado)', `${s.portafolio.retorno}% · Sharpe ${s.portafolio.sharpe} · DD ${s.portafolio.max_dd}%`,
+             s.portafolio.retorno > 0 ? 'pos' : 'neg') +
+        chip('Mismos pesos en B&H', `${s.benchmark_bh.retorno}% · Sharpe ${s.benchmark_bh.sharpe} · DD ${s.benchmark_bh.max_dd}%`) +
+        chip('S&P 500', `${s.spy.retorno}% · Sharpe ${s.spy.sharpe} · DD ${s.spy.max_dd}%`);
+    const gana = s.portafolio.retorno > s.benchmark_bh.retorno && s.portafolio.retorno > 0;
+    const sharpeMejor = s.portafolio.sharpe > s.benchmark_bh.sharpe;
+    let v;
+    if (gana && sharpeMejor) {
+        v = ['bg-green-900/40 border-green-700', `✅ El portafolio de supervivientes aprueba el examen sagrado: ${s.portafolio.retorno}% con Sharpe ${s.portafolio.sharpe}, superando a su benchmark B&H (${s.benchmark_bh.retorno}%, Sharpe ${s.benchmark_bh.sharpe}) en un período que ninguna selección vio.`];
+    } else if (s.portafolio.retorno > 0) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ El portafolio es rentable en el sagrado (${s.portafolio.retorno}%) pero no domina a su benchmark B&H (${s.benchmark_bh.retorno}%). Supervivencia parcial.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ El portafolio pierde en el período sagrado (${s.portafolio.retorno}%): la selección no sobrevivió el examen final.`];
+    }
+    document.getElementById('port-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]} Componentes: ${d.portafolio.componentes.map(c => `${c.nombre} (${(c.peso * 100).toFixed(1)}%)`).join(', ')}.</div>`;
+
+    const c = d.portafolio.curva;
+    if (chartPort) chartPort.destroy();
+    chartPort = new Chart(document.getElementById('chart-port'), {
+        type: 'line',
+        data: {
+            labels: c.labels,
+            datasets: [
+                { label: 'Portafolio de supervivientes', data: c.portafolio, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                { label: 'Mismos pesos en B&H', data: c.benchmark, borderColor: '#94a3b8', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.2 },
+                { label: 'S&P 500', data: c.spy, borderColor: '#0ea5e9', borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 13 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Clásicas (Exp. 11) ----------------------
+let chartClasicas = null;
+async function initClasicas() {
+    await cargarMeta();
+    const d = await cargar('data/multi_activo/clasicas.json');
+    document.getElementById('cl-crit-espec').textContent = `Criterio: ${d.criterio_especialista}.`;
+
+    const u = d.universales;
+    const filasUni = u.candidatas.map(c => `
+        <div class="bg-slate-900 rounded-xl p-3 mt-2 text-sm">
+            <b>${c.nombre}</b> · sagrado:
+            ${Object.entries(c.sagrada).map(([t, r]) => `${nombreDe(t)} ${fmtPct(r)}`).join(' · ')}
+            → ${c.aprueba_sagrada ? '<span class="pos font-bold">✔ APRUEBA el sagrado</span>'
+                                  : '<span class="neg font-bold">✘ falla el sagrado</span>'}
+        </div>`).join('');
+    document.getElementById('cl-uni').innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-semibold mb-1 text-slate-200">Pista A: búsqueda universal</h2>
+            <p class="text-slate-500 text-xs mb-3">Criterio: ${d.criterio_universal}. Universo: ${d.num_estrategias} estrategias (${d.familias}).</p>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
+                ${chip('Sobreviven la selección', fmtNum(u.supervivientes_seleccion), u.supervivientes_seleccion > 0 ? 'pos' : 'neg')}
+                ${chip('Aprueban el sagrado', fmtNum(u.candidatas.filter(c => c.aprueba_sagrada).length),
+                       u.candidatas.some(c => c.aprueba_sagrada) ? 'pos' : 'neg')}
+            </div>${filasUni}
+        </div>`;
+
+    const filas = Object.entries(d.especialistas).map(([tk, e]) => {
+        const el = e.elegido;
+        return `<tr><td class="font-bold">${e.nombre}</td>
+            <td>${fmtNum(e.sobreviven)}</td>
+            <td>${el ? el.nombre : '<span class="text-slate-600">—</span>'}</td>
+            <td>${el ? fmtPct(el.peor_exceso_test) : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.retorno) : '—'}</td>
+            <td>${el ? el.sagrada.sharpe : '—'}</td>
+            <td>${el ? fmtPct(el.sagrada.max_dd) : '—'}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-cl-espec').innerHTML = `
+        <thead><tr><th>Mercado</th><th>Sobreviven selección</th><th>Elegida</th>
+        <th>Peor exceso vs B&H (tests)</th><th>Ret. sagrado</th><th>Sharpe sagrado</th><th>DD sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    const panel = document.getElementById('panel-cl-chart');
+    if (!d.portafolio) {
+        document.getElementById('cl-chips').innerHTML = '';
+        document.getElementById('cl-veredicto').innerHTML =
+            '<div class="bg-red-900/40 border border-red-700 rounded-xl p-4 text-sm">❌ Ningún mercado produjo especialistas clásicos supervivientes.</div>';
+        panel.classList.add('hidden');
+        return;
+    }
+    panel.classList.remove('hidden');
+    const s = d.portafolio.sagrada;
+    document.getElementById('cl-chips').innerHTML =
+        chip('Portafolio clásico (sagrado)', `${s.portafolio.retorno}% · Sharpe ${s.portafolio.sharpe} · DD ${s.portafolio.max_dd}%`,
+             s.portafolio.retorno > 0 ? 'pos' : 'neg') +
+        chip('Mismos pesos en B&H', `${s.benchmark_bh.retorno}% · Sharpe ${s.benchmark_bh.sharpe} · DD ${s.benchmark_bh.max_dd}%`) +
+        chip('S&P 500', `${s.spy.retorno}% · Sharpe ${s.spy.sharpe} · DD ${s.spy.max_dd}%`);
+    const gana = s.portafolio.retorno > 0 && s.portafolio.sharpe > s.benchmark_bh.sharpe;
+    let v;
+    if (gana && s.portafolio.retorno > s.benchmark_bh.retorno) {
+        v = ['bg-green-900/40 border-green-700', `✅ El portafolio clásico aprueba el examen sagrado: ${s.portafolio.retorno}% (Sharpe ${s.portafolio.sharpe}), superando a su benchmark B&H.`];
+    } else if (s.portafolio.retorno > 0) {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Rentable en el sagrado (${s.portafolio.retorno}%, Sharpe ${s.portafolio.sharpe}) pero sin dominar al B&H (${s.benchmark_bh.retorno}%, Sharpe ${s.benchmark_bh.sharpe}). Supervivencia parcial.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700', `❌ El portafolio clásico pierde en el sagrado (${s.portafolio.retorno}%).`];
+    }
+    document.getElementById('cl-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]} Componentes: ${d.portafolio.componentes.map(c => `${c.nombre} → ${c.estrategia} (${(c.peso * 100).toFixed(1)}%)`).join(' · ')}.</div>`;
+
+    const c = d.portafolio.curva;
+    if (chartClasicas) chartClasicas.destroy();
+    chartClasicas = new Chart(document.getElementById('chart-clasicas'), {
+        type: 'line',
+        data: {
+            labels: c.labels,
+            datasets: [
+                { label: 'Portafolio clásico', data: c.portafolio, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                { label: 'Mismos pesos en B&H', data: c.benchmark, borderColor: '#94a3b8', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.2 },
+                { label: 'S&P 500', data: c.spy, borderColor: '#0ea5e9', borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 13 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Meta-Portafolio (Exp. 12) ----------------------
+let chartMeta = null;
+const META_VERSIONES = {
+    v1: { texto: 'Exp. 12 · 2021-2026 · 11 mercados · sin costos', archivo: 'data/multi_activo/meta_portafolio.json' },
+    v2: { texto: 'Exp. 13 · 2015-2026 · ~18 mercados · costos + vol-target', archivo: 'data/multi_activo/meta_portafolio_v2.json' },
+};
+let metaVer = 'v2';
+async function initMeta() {
+    botones('meta-versiones', Object.entries(META_VERSIONES).map(([id, v]) => ({id, texto: v.texto})), 'modo',
+        id => { metaVer = id; pintarMeta(); }, metaVer);
+    await pintarMeta();
+}
+async function pintarMeta() {
+    let d;
+    try { d = await cargar(META_VERSIONES[metaVer].archivo); }
+    catch (e) {
+        if (metaVer === 'v2') { metaVer = 'v1'; d = await cargar(META_VERSIONES.v1.archivo); }
+        else throw e;
+    }
+    const primaria = 'TSMOM-252 (primaria)';
+    const p = d.variantes[primaria];
+
+    // Veredicto sobre la variante primaria
+    const sig = p.inferencia.p_bootstrap < 0.05;
+    const casi = p.inferencia.p_bootstrap < 0.15;
+    let v;
+    if (sig) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ TSMOM-252 diversificado tiene ventaja estadísticamente significativa: t-stat ${p.inferencia.t_stat}, p(boot) ${p.inferencia.p_bootstrap}, Sharpe ${p.total.sharpe} (CI95 ${p.inferencia.ci_sharpe_95.join(' a ')}).`];
+    } else if (casi) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ TSMOM-252 diversificado apunta en la dirección correcta (Sharpe ${p.total.sharpe}, t-stat ${p.inferencia.t_stat}) pero no alcanza significancia (p(boot) ${p.inferencia.p_bootstrap}): la ventana de 5 años es corta para una ventaja débil.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ TSMOM-252 diversificado no muestra ventaja en esta ventana: Sharpe ${p.total.sharpe}, t-stat ${p.inferencia.t_stat}, p(boot) ${p.inferencia.p_bootstrap}.`];
+    }
+    document.getElementById('meta-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+
+    // Tabla de inferencia
+    const filas = Object.entries(d.variantes).map(([n, r]) => `
+        <tr><td class="font-bold">${n}</td>
+        <td>${fmtPct(r.total.retorno)}</td><td>${r.total.sharpe}</td><td>${fmtPct(r.total.max_dd)}</td>
+        <td>${r.inferencia.t_stat}</td>
+        <td class="${r.inferencia.p_bootstrap < 0.05 ? 'pos font-bold' : (r.inferencia.p_bootstrap < 0.15 ? 'text-amber-400' : 'neg')}">${r.inferencia.p_bootstrap}</td>
+        <td>${r.inferencia.ci_sharpe_95.join(' a ')}</td>
+        <td>${fmtPct(r.sagrado.retorno)}</td></tr>`).join('') + `
+        <tr><td class="font-bold text-slate-400">Benchmark B&H diversificado</td>
+        <td>${fmtPct(d.benchmark_bh.total.retorno)}</td><td>${d.benchmark_bh.total.sharpe}</td>
+        <td>${fmtPct(d.benchmark_bh.total.max_dd)}</td><td>—</td><td>—</td><td>—</td>
+        <td>${fmtPct(d.benchmark_bh.sagrado.retorno)}</td></tr>`;
+    document.getElementById('tabla-meta').innerHTML = `
+        <thead><tr><th>Variante</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>p (boot)</th><th>Sharpe CI95</th><th>Sagrado</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+
+    // Consistencia anual
+    const anios = Object.keys(p.por_anio);
+    const filasA = Object.entries(d.variantes).map(([n, r]) => `
+        <tr><td class="font-bold">${n}</td>${anios.map(a => `<td>${fmtPct(r.por_anio[a] ?? 0)}</td>`).join('')}</tr>`).join('');
+    document.getElementById('tabla-meta-anios').innerHTML = `
+        <thead><tr><th>Variante</th>${anios.map(a => `<th>${a}</th>`).join('')}</tr></thead>
+        <tbody>${filasA}</tbody>`;
+
+    // Gráfico: primaria + ensamble + benchmark + SPY
+    const series = [
+        ['TSMOM-252 (primaria)', d.variantes[primaria].curva, '#22c55e', 2.5, []],
+        ['Ensamble (voto)', d.variantes['Ensamble (voto)'].curva, '#a855f7', 1.8, []],
+        ['B&H diversificado', d.benchmark_bh.curva, '#94a3b8', 2, [6, 4]],
+        ['S&P 500', d.spy.curva, '#0ea5e9', 1.5, [2, 3]],
+    ];
+    const labels = d.benchmark_bh.curva.labels;
+    if (chartMeta) chartMeta.destroy();
+    chartMeta = new Chart(document.getElementById('chart-meta'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: series.map(([label, curva, color, width, dash]) => ({
+                label, borderColor: color, borderWidth: width, borderDash: dash,
+                pointRadius: 0, tension: 0.2,
+                data: labels.map(l => {
+                    const i = curva.labels.indexOf(l);
+                    return i >= 0 ? curva.valores[i] : null;
+                }),
+            })),
+        },
+        options: {
+            spanGaps: true,
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Institucional (Exp. 14) ----------------------
+let chartInst = null;
+async function initInst() {
+    pintarImpl();
+    const d = await cargar('data/multi_activo/institucional.json');
+    const mejor = d.mezclas.find(m => m.etiqueta === d.mejor_sharpe);
+    const puro_bh = d.mezclas.find(m => m.pct_tsmom === 0);
+    document.getElementById('inst-chips').innerHTML =
+        chip('Correlación diaria TSMOM ↔ B&H', d.correlacion_diaria,
+             Math.abs(d.correlacion_diaria) < 0.3 ? 'pos' : 'text-amber-400') +
+        chip('Mejor mezcla (Sharpe)', d.mejor_sharpe, 'pos') +
+        chip('Sharpe de la mejor', mejor.total.sharpe, 'pos');
+    const diversifica = mejor.pct_tsmom > 0 && mejor.pct_tsmom < 100;
+    const v = diversifica
+        ? ['bg-green-900/40 border-green-700',
+           `✅ La diversificación funciona: la mezcla ${d.mejor_sharpe} logra Sharpe ${mejor.total.sharpe} con drawdown ${mejor.total.max_dd}%, mejor riesgo-ajuste que el B&H puro (Sharpe ${puro_bh.total.sharpe}, DD ${puro_bh.total.max_dd}%). Correlación entre componentes: ${d.correlacion_diaria}.`]
+        : ['bg-amber-900/40 border-amber-700',
+           `⚠️ La mejor mezcla es un extremo (${d.mejor_sharpe}): en esta ventana la combinación no mejora a sus componentes.`];
+    document.getElementById('inst-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('tabla-inst').innerHTML = `
+        <thead><tr><th>Mezcla</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>p (boot)</th><th>Sagrado</th></tr></thead>
+        <tbody>${d.mezclas.map(m => `
+            <tr class="${m.etiqueta === d.mejor_sharpe ? 'font-bold' : ''}">
+            <td>${m.etiqueta}${m.etiqueta === d.mejor_sharpe ? ' 🏆' : ''}</td>
+            <td>${fmtPct(m.total.retorno)}</td><td>${m.total.sharpe}</td>
+            <td>${fmtPct(m.total.max_dd)}</td><td>${m.inferencia.t_stat}</td>
+            <td>${m.inferencia.p_bootstrap}</td><td>${fmtPct(m.sagrado.retorno)}</td></tr>`).join('')}</tbody>`;
+    const paleta = { 0: '#94a3b8', 25: '#0ea5e9', 50: '#22c55e', 75: '#eab308', 100: '#a855f7' };
+    const labels = Object.values(d.curvas)[0].labels;
+    if (chartInst) chartInst.destroy();
+    chartInst = new Chart(document.getElementById('chart-inst'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: d.mezclas.map(m => ({
+                label: m.etiqueta,
+                data: d.curvas[m.etiqueta].valores,
+                borderColor: paleta[m.pct_tsmom],
+                borderWidth: m.etiqueta === d.mejor_sharpe ? 3 : 1.5,
+                pointRadius: 0, tension: 0.2,
+            })),
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Implementabilidad (Exp. 15, dentro de 🏦) ----------------------
+let chartImplGrid = null;
+async function pintarImpl() {
+    const panel = document.getElementById('panel-impl');
+    let d;
+    try { d = await cargar('data/multi_activo/implementacion.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    const s = d.sagrado_con_w_optimo;
+    document.getElementById('impl-chips').innerHTML =
+        chip('w* elegido solo con selección', `${(d.w_optimo_seleccion * 100).toFixed(0)}% TSMOM`) +
+        chip('Meseta robusta de Sharpe', `${(d.meseta.desde * 100).toFixed(0)}% – ${(d.meseta.hasta * 100).toFixed(0)}%`, 'pos') +
+        chip('Sagrado con w* honesto', `${s.retorno}% · Sharpe ${s.sharpe} · DD ${s.max_dd}%`,
+             s.retorno > 0 ? 'pos' : 'neg') +
+        chip('% meses positivos', d.colas.pct_meses_positivos + '%',
+             d.colas.pct_meses_positivos >= 60 ? 'pos' : 'text-amber-400');
+
+    document.getElementById('impl-crisis').innerHTML = `
+        <div class="bg-slate-900 rounded-xl p-3">En los <b>${d.crisis.num_meses_crisis} peores meses</b> del B&H
+            (retorno ≤ ${d.crisis.umbral_decil_pct}%): B&H promedio ${fmtPct(d.crisis.bh_prom_pct)},
+            TSMOM ${fmtPct(d.crisis.tsmom_prom_pct)}, <b>mezcla ${fmtPct(d.crisis.mezcla_prom_pct)}</b>.</div>
+        <div class="bg-slate-900 rounded-xl p-3">Colas de la mezcla: Sortino <b>${d.colas.sortino}</b> ·
+            peor mes ${fmtPct(d.colas.peor_mes_pct)} · peor trimestre ${fmtPct(d.colas.peor_trimestre_pct)} ·
+            asimetría ${d.colas.asimetria}.</div>`;
+
+    document.getElementById('tabla-impl-reb').innerHTML = `
+        <thead><tr><th>Frecuencia de rebalanceo</th><th>Retorno total</th><th>Sharpe</th>
+        <th>Max DD</th><th>t-stat</th></tr></thead>
+        <tbody>${Object.entries(d.rebalanceo).map(([f, r]) => `
+            <tr><td class="font-bold">${f}</td><td>${fmtPct(r.retorno)}</td><td>${r.sharpe}</td>
+            <td>${fmtPct(r.max_dd)}</td><td>${r.t_stat}</td></tr>`).join('')}</tbody>`;
+
+    if (chartImplGrid) chartImplGrid.destroy();
+    chartImplGrid = new Chart(document.getElementById('chart-impl-grid'), {
+        type: 'line',
+        data: {
+            labels: d.grid.pesos.map(w => (w * 100).toFixed(0) + '%'),
+            datasets: [
+                { label: 'Sharpe (ventana completa)', data: d.grid.sharpe_total,
+                  borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 2, tension: 0.3 },
+                { label: 'Sharpe (solo selección)', data: d.grid.sharpe_seleccion,
+                  borderColor: '#0ea5e9', borderWidth: 2, borderDash: [6, 4], pointRadius: 2, tension: 0.3 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { title: { display: true, text: '% del portafolio en TSMOM', color: '#64748b' },
+                     ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Volatilidad (Fase 1) ----------------------
+let chartVolMercado = null, chartVolSistema = null;
+function colorPercentil(p) {
+    const r = Math.round(34 + (239 - 34) * (p / 100));
+    const g = Math.round(197 - (197 - 68) * (p / 100));
+    return `background: rgba(${r}, ${g}, 68, 0.35)`;
+}
+async function initVol() {
+    pintarVolModelos();
+    pintarVolMH();
+    pintarVolTarget();
+    const d = await cargar('data/multi_activo/volatilidad.json');
+    document.getElementById('vol-meta').textContent =
+        `Ventana: ${d.ventana.inicio} → ${d.ventana.fin} · Generado: ${d.generado}`;
+    const sis = d.sistema;
+    const vix = d.implicitas['^VIX'];
+    document.getElementById('vol-chips').innerHTML =
+        chip('Mercados monitoreados', Object.keys(d.mercados).length) +
+        chip('Correlación media (126d)', sis.correlacion_actual ?? '—',
+             sis.correlacion_actual > 0.4 ? 'neg' : (sis.correlacion_actual > 0.25 ? 'text-amber-400' : 'pos')) +
+        chip('Mercados en vol alta', sis.pct_mercados_vol_alta + '%',
+             sis.pct_mercados_vol_alta >= 40 ? 'neg' : (sis.pct_mercados_vol_alta >= 20 ? 'text-amber-400' : 'pos')) +
+        chip('Pronóstico al alza', (sis.pct_vol_subiendo ?? '—') + '%',
+             sis.pct_vol_subiendo >= 50 ? 'neg' : (sis.pct_vol_subiendo >= 30 ? 'text-amber-400' : 'pos')) +
+        chip('VIX', vix ? `${vix.actual} (pct ${vix.percentil})` : '—') +
+        chip('VRP S&P (VIX − prev. 21d)', d.vrp_spy === null || d.vrp_spy === undefined ? '—' : d.vrp_spy + ' pts',
+             d.vrp_spy > 0 ? 'pos' : 'neg');
+    document.getElementById('vol-alertas').innerHTML = d.alertas.length === 0
+        ? '<div class="bg-green-900/30 border border-green-800 rounded-xl p-3 text-sm">✅ Sin alertas: todos los mercados en régimen normal.</div>'
+        : d.alertas.map(a => `<div class="${a.nivel === 'alto' ? 'bg-red-900/40 border-red-700' : 'bg-amber-900/40 border-amber-700'} border rounded-xl p-3 text-sm">⚠️ ${a.texto}</div>`).join('');
+
+    const tickers = Object.keys(d.mercados);
+    const categorias = [...new Set(tickers.map(t => d.mercados[t].categoria))];
+    const flechaTendencia = m => m.tendencia === 'sube'
+        ? '<span class="neg font-bold">▲ sube</span>'
+        : (m.tendencia === 'baja' ? '<span class="pos font-bold">▼ baja</span>'
+                                  : '<span class="text-slate-500">— estable</span>');
+    document.getElementById('tabla-vol').innerHTML = `
+        <thead><tr><th>Mercado</th><th>5d</th><th>21d</th><th>63d</th><th>252d</th>
+        <th>Yang-Zhang</th><th>Vol-of-vol</th><th>Percentil</th><th>TS 5/63</th>
+        <th>Prev. 1d</th><th>Prev. 5d</th><th>Prev. 21d</th><th>Tendencia</th></tr></thead>
+        <tbody>${categorias.map(cat => `
+            <tr><td colspan="13" class="font-bold text-green-500" style="background:#020617">${cat}</td></tr>` +
+            tickers.filter(t => d.mercados[t].categoria === cat).map(t => { const m = d.mercados[t]; return `
+            <tr><td class="font-bold">${m.nombre}</td>
+            <td>${m.vol.v5}</td><td>${m.vol.v21}</td><td>${m.vol.v63}</td><td>${m.vol.v252}</td>
+            <td>${m.yang_zhang21 ?? '—'}</td><td>${m.vol_of_vol ?? '—'}</td>
+            <td style="${colorPercentil(m.percentil)}" class="font-bold">${m.percentil}</td>
+            <td class="${m.ratio_ts >= 1.3 ? 'neg font-bold' : ''}">${m.ratio_ts ?? '—'}${m.ratio_ts >= 1.3 ? ' ⚡' : ''}</td>
+            <td>${m.prevista.d1}</td><td>${m.prevista.d5}</td><td class="font-bold">${m.prevista.d21}</td>
+            <td>${flechaTendencia(m)}</td></tr>`; }).join('')).join('')}</tbody>`;
+
+    botones('vol-mercados', tickers.map(t => ({id: t, texto: d.mercados[t].nombre})), 'pill',
+        id => pintarVolMercado(d, id));
+    pintarVolMercado(d, tickers[0]);
+
+    if (chartVolSistema) chartVolSistema.destroy();
+    chartVolSistema = new Chart(document.getElementById('chart-vol-sistema'), {
+        type: 'line',
+        data: {
+            labels: sis.labels,
+            datasets: [
+                { label: 'Correlación media', data: sis.correlacion_media, borderColor: '#eab308',
+                  borderWidth: 2, pointRadius: 0, tension: 0.2 },
+                { label: 'Absorption ratio', data: sis.absorption, borderColor: '#ef4444',
+                  borderWidth: 2, pointRadius: 0, tension: 0.2 },
+            ],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 12 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+function pintarVolMercado(d, ticker) {
+    const m = d.mercados[ticker];
+    if (chartVolMercado) chartVolMercado.destroy();
+    chartVolMercado = new Chart(document.getElementById('chart-vol-mercado'), {
+        type: 'line',
+        data: {
+            labels: m.spark.labels,
+            datasets: [{ label: `Vol 21d anualizada de ${m.nombre} (%)`, data: m.spark.valores,
+                         borderColor: '#0ea5e9', borderWidth: 2, pointRadius: 0, tension: 0.2, fill: true,
+                         backgroundColor: 'rgba(14,165,233,0.08)' }],
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 12 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- Torneo de modelos de vol (Fase 2) ----------------------
+async function pintarVolModelos() {
+    const panel = document.getElementById('panel-vol-modelos');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_modelos.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vol-mod-desc').textContent = d.metodologia;
+
+    const mejor = d.mejor_global;
+    const g = d.global;
+    const nMercados = Object.keys(d.por_mercado).length;
+    const ganaMercados = g[mejor].mercados_donde_gana;
+    let v;
+    if (mejor !== 'HIST21' && g[mejor].qlike_prom_sel < g['HIST21'].qlike_prom_sel) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ La volatilidad es predecible: <b>${mejor}</b> gana el torneo (mejor QLIKE en ${ganaMercados} de ${nMercados} mercados, mejor promedio global y mejor en el período sagrado`
+             + (g[mejor].vence_har_dm_significativo !== null ? `, con significancia DM sobre HAR en ${g[mejor].vence_har_dm_significativo} mercados` : '')
+             + `). EWMA es el segundo robusto y barato. LightGBM pierde con claridad: a frecuencia diaria, el ML no supera a la estructura de un GARCH de 4 parámetros.`];
+    } else {
+        v = ['bg-amber-900/40 border-amber-700', `⚠️ Resultado mixto: revisar el ranking (mejor global: ${mejor}).`];
+    }
+    document.getElementById('vol-mod-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+
+    document.getElementById('tabla-vol-global').innerHTML = `
+        <thead><tr><th>Modelo</th><th>QLIKE selección</th><th>QLIKE sagrado</th>
+        <th>Gana en # mercados</th><th>Vence a HAR (DM p&lt;0.05)</th></tr></thead>
+        <tbody>${d.modelos.map(m => `
+            <tr class="${m === mejor ? 'font-bold' : ''}">
+            <td>${m}${m === mejor ? ' 🏆' : ''}${m === 'HAR' ? ' (primaria)' : ''}</td>
+            <td>${g[m].qlike_prom_sel}</td><td>${g[m].qlike_prom_sag}</td>
+            <td>${g[m].mercados_donde_gana}</td>
+            <td>${g[m].vence_har_dm_significativo === null ? '—' : g[m].vence_har_dm_significativo + ' de ' + nMercados}</td></tr>`).join('')}</tbody>`;
+
+    document.getElementById('tabla-vol-mercados-mod').innerHTML = `
+        <thead><tr><th>Mercado</th>${d.modelos.map(m => `<th>${m}</th>`).join('')}<th>Mejor</th></tr></thead>
+        <tbody>${Object.entries(d.por_mercado).map(([tk, r]) => `
+            <tr><td class="font-bold">${r.nombre}</td>
+            ${d.modelos.map(m => {
+                const q = r.qlike_sel[m];
+                const dm = r.dm_vs_har[m];
+                const sig = dm && dm.p !== null && dm.p < 0.05 && q < r.qlike_sel['HAR'];
+                return `<td class="${r.mejor_sel === m ? 'pos font-bold' : ''}">${q ?? '—'}${sig ? '<b>*</b>' : ''}</td>`;
+            }).join('')}
+            <td class="pos font-bold">${r.mejor_sel}</td></tr>`).join('')}</tbody>`;
+}
+
+// ---------------------- Validación multi-horizonte (tablero) ----------------------
+async function pintarVolMH() {
+    const panel = document.getElementById('panel-vol-mh');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_multihorizonte.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vmh-desc').textContent =
+        `${d.metodologia} Universo: ${d.num_mercados} mercados.`;
+    const n = d.num_mercados;
+    const filas = d.horizontes.map(h => {
+        const g = d.global[String(h)];
+        return `<tr><td class="font-bold">${h} día${h > 1 ? 's' : ''}</td>
+            <td class="${g.qlike_prom_sel.GJR <= Math.min(g.qlike_prom_sel.HIST21, g.qlike_prom_sel.EWMA) ? 'pos font-bold' : ''}">${g.qlike_prom_sel.GJR}</td>
+            <td>${g.qlike_prom_sel.HIST21}</td><td>${g.qlike_prom_sel.EWMA}</td>
+            <td>${g.gjr_gana_hist}/${n} <span class="text-slate-500">(DM sig. ${g.dm_sig_hist})</span></td>
+            <td>${g.gjr_gana_ewma}/${n} <span class="text-slate-500">(DM sig. ${g.dm_sig_ewma})</span></td>
+            <td>${g.qlike_prom_sag.GJR} vs ${g.qlike_prom_sag.HIST21} / ${g.qlike_prom_sag.EWMA}</td></tr>`;
+    }).join('');
+    document.getElementById('tabla-vmh').innerHTML = `
+        <thead><tr><th>Horizonte</th><th>GJR</th><th>HIST-21</th><th>EWMA</th>
+        <th>GJR vence a HIST</th><th>GJR vence a EWMA</th><th>Sagrado (GJR vs varas)</th></tr></thead>
+        <tbody>${filas}</tbody>`;
+    const h21 = d.global['21'];
+    const aprueba = h21.qlike_prom_sel.GJR < h21.qlike_prom_sel.HIST21
+        && h21.qlike_prom_sel.GJR < h21.qlike_prom_sel.EWMA
+        && h21.gjr_gana_hist >= n / 2;
+    const v = aprueba
+        ? ['bg-green-900/40 border-green-700', `✅ Los pronósticos del tablero quedan validados en todos los horizontes: el GJR multi-paso vence a ambas varas también a 21 días (QLIKE ${h21.qlike_prom_sel.GJR} vs ${h21.qlike_prom_sel.HIST21} / ${h21.qlike_prom_sel.EWMA}), ganando en ${h21.gjr_gana_hist} de ${n} mercados con significancia DM en ${h21.dm_sig_hist}.`]
+        : ['bg-amber-900/40 border-amber-700', `⚠️ Validación parcial: a 21 días el GJR no domina a las varas con claridad — leer las columnas de pronóstico largo del tablero con cautela.`];
+    document.getElementById('vmh-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+}
+
+// ---------------------- Vol-targeting anticipativo (Exp. 16) ----------------------
+let chartVT = null;
+async function pintarVolTarget() {
+    const panel = document.getElementById('panel-vol-target');
+    let d;
+    try { d = await cargar('data/multi_activo/vol_target_v3.json'); }
+    catch (e) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    document.getElementById('vt-desc').textContent =
+        `${d.metodologia} Muestra común: ${fmtNum(d.muestra.dias)} días (${d.muestra.desde} → ${d.muestra.hasta}).`;
+    const A = d.variantes.A, B = d.variantes.B, C = d.variantes.C;
+    const mejorAnticipativo = B.total.sharpe >= C.total.sharpe ? B : C;
+    let v;
+    if (mejorAnticipativo.vs_statu_quo.p_mejora < 0.05 && mejorAnticipativo.vs_statu_quo.delta_sharpe > 0) {
+        v = ['bg-green-900/40 border-green-700',
+             `✅ El termostato anticipativo mejora el portafolio con significancia: <b>${mejorAnticipativo.etiqueta}</b> gana ΔSharpe ${mejorAnticipativo.vs_statu_quo.delta_sharpe} sobre el rodante (p=${mejorAnticipativo.vs_statu_quo.p_mejora}, bootstrap pareado).`];
+    } else if (mejorAnticipativo.vs_statu_quo.delta_sharpe > 0) {
+        v = ['bg-amber-900/40 border-amber-700',
+             `⚠️ El anticipativo apunta a mejora (${mejorAnticipativo.etiqueta}: ΔSharpe +${mejorAnticipativo.vs_statu_quo.delta_sharpe}) pero sin significancia (p=${mejorAnticipativo.vs_statu_quo.p_mejora}): con esta muestra no se puede distinguir del azar. El statu quo (rodante 63d) sigue siendo defendible por simplicidad.`];
+    } else {
+        v = ['bg-red-900/40 border-red-700',
+             `❌ El pronóstico no mejora el vol-targeting en este portafolio: el rodante 63d (ΔSharpe ${mejorAnticipativo.vs_statu_quo.delta_sharpe} para el mejor anticipativo) se mantiene como estándar. Buen pronóstico ≠ mejor cartera: el targeting depende de la vol de mediano plazo, no de la de mañana.`];
+    }
+    document.getElementById('vt-veredicto').innerHTML =
+        `<div class="${v[0]} border rounded-xl p-4 text-sm">${v[1]}</div>`;
+    document.getElementById('tabla-vt').innerHTML = `
+        <thead><tr><th>Termostato</th><th>Retorno total</th><th>Sharpe</th><th>Max DD</th>
+        <th>t-stat</th><th>Sagrado</th><th>ΔSharpe vs A</th><th>p (mejora)</th></tr></thead>
+        <tbody>${['A', 'B', 'C'].map(k => { const r = d.variantes[k]; return `
+            <tr><td class="font-bold">${r.etiqueta}</td>
+            <td>${fmtPct(r.total.retorno)}</td><td>${r.total.sharpe}</td><td>${fmtPct(r.total.max_dd)}</td>
+            <td>${r.inferencia.t_stat}</td><td>${fmtPct(r.sagrado.retorno)}</td>
+            <td>${r.vs_statu_quo ? (r.vs_statu_quo.delta_sharpe > 0 ? '+' : '') + r.vs_statu_quo.delta_sharpe : '—'}</td>
+            <td>${r.vs_statu_quo ? r.vs_statu_quo.p_mejora : '—'}</td></tr>`; }).join('')}</tbody>`;
+    const paleta = ['#94a3b8', '#22c55e', '#0ea5e9'];
+    const nombres = Object.keys(d.curvas);
+    if (chartVT) chartVT.destroy();
+    chartVT = new Chart(document.getElementById('chart-vt'), {
+        type: 'line',
+        data: {
+            labels: d.curvas[nombres[0]].labels,
+            datasets: nombres.map((n, i) => ({
+                label: n, data: d.curvas[n].valores, borderColor: paleta[i % paleta.length],
+                borderWidth: i === 0 ? 2 : 1.8, borderDash: i === 0 ? [6, 4] : [],
+                pointRadius: 0, tension: 0.2,
+            })),
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+}
+
+// ---------------------- BTC legado ----------------------
+let chartLegado = null;
+const LEGADO = {
+    '2a': 'Exp 2A: N=3 Long/Cash', '2b': 'Exp 2B: N=3 Long/Short',
+    '3a': 'Exp 3A: N=4 Long/Cash', '3b': 'Exp 3B: N=4 Long/Short',
+};
+async function initLegado() {
+    botones('legado-exps', Object.entries(LEGADO).map(([id, texto]) => ({id, texto})), 'nav', pintarLegado);
+    await pintarLegado('2a');
+}
+async function pintarLegado(exp) {
+    const [metricas, equity] = await Promise.all([
+        cargar(`data/metrics_${exp}.json`), cargar(`data/equity_${exp}.json`),
+    ]);
+    const paleta = ['#94a3b8', '#22c55e', '#0ea5e9', '#eab308', '#f472b6', '#a78bfa',
+                    '#34d399', '#fb923c', '#818cf8', '#f87171', '#2dd4bf'];
+    const datasets = Object.entries(equity.datasets).map(([nombre, valores], i) => ({
+        label: nombre === 'Buy_and_Hold' ? 'Buy & Hold' : nombre,
+        data: valores, borderColor: paleta[i % paleta.length],
+        borderWidth: nombre === 'Buy_and_Hold' ? 3 : 1.2,
+        borderDash: nombre === 'Buy_and_Hold' ? [6, 4] : [],
+        pointRadius: 0, tension: 0.2,
+    }));
+    if (chartLegado) chartLegado.destroy();
+    chartLegado = new Chart(document.getElementById('chart-legado'), {
+        type: 'line',
+        data: { labels: equity.labels, datasets },
+        options: {
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+                x: { ticks: { color: '#64748b', maxTicksLimit: 14 }, grid: { color: '#1e293b' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            },
+        },
+    });
+    tablaDT('#tabla-legado', [
+        { title: 'Estrategia', data: 'Estrategia' },
+        { title: 'Lógica (Binaria)', data: 'Logica', render: adnHtml },
+        { title: 'Retorno (%)', data: 'Retorno', render: fmtPct },
+        { title: 'Sharpe', data: 'Sharpe' },
+        { title: 'Max DD (%)', data: 'Max_DD', render: fmtPct },
+    ], metricas, 2);
+}
+
+// Arranque
+mostrarSeccion('resumen');
+</script>
 </body>
 </html>
