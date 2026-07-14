@@ -1,0 +1,114 @@
+{
+  "ranking_sectores": {
+    "Technology": 0.334,
+    "Energy": 0.2727,
+    "Industrials": 0.168,
+    "Health Care": 0.1248,
+    "Real Estate": 0.1166,
+    "Utilities": 0.115,
+    "Materials": 0.0911,
+    "Consumer Staples": 0.0783,
+    "Financials": 0.0532,
+    "Communication Services": 0.0089,
+    "Consumer Discretionary": -0.0037
+  },
+  "cupos": {
+    "Technology": 3,
+    "Energy": 3,
+    "Industrials": 3,
+    "Health Care": 2,
+    "Real Estate": 2,
+    "Utilities": 2,
+    "Materials": 2,
+    "Consumer Staples": 1,
+    "Financials": 1,
+    "Communication Services": 1,
+    "Consumer Discretionary": 1
+  },
+  "nuevos": [
+    {
+      "ticker": "LRCX",
+      "sector": "Technology"
+    },
+    {
+      "ticker": "AMD",
+      "sector": "Technology"
+    },
+    {
+      "ticker": "DELL",
+      "sector": "Technology"
+    },
+    {
+      "ticker": "SLB",
+      "sector": "Energy"
+    },
+    {
+      "ticker": "PSX",
+      "sector": "Energy"
+    },
+    {
+      "ticker": "XOM",
+      "sector": "Energy"
+    },
+    {
+      "ticker": "GE",
+      "sector": "Industrials"
+    },
+    {
+      "ticker": "RTX",
+      "sector": "Industrials"
+    },
+    {
+      "ticker": "PH",
+      "sector": "Industrials"
+    },
+    {
+      "ticker": "MRK",
+      "sector": "Health Care"
+    },
+    {
+      "ticker": "LLY",
+      "sector": "Health Care"
+    },
+    {
+      "ticker": "EQIX",
+      "sector": "Real Estate"
+    },
+    {
+      "ticker": "SPG",
+      "sector": "Real Estate"
+    },
+    {
+      "ticker": "AEP",
+      "sector": "Utilities"
+    },
+    {
+      "ticker": "NEE",
+      "sector": "Utilities"
+    },
+    {
+      "ticker": "SCCO",
+      "sector": "Materials"
+    },
+    {
+      "ticker": "NUE",
+      "sector": "Materials"
+    },
+    {
+      "ticker": "TGT",
+      "sector": "Consumer Staples"
+    },
+    {
+      "ticker": "MS",
+      "sector": "Financials"
+    },
+    {
+      "ticker": "META",
+      "sector": "Communication Services"
+    },
+    {
+      "ticker": "GM",
+      "sector": "Consumer Discretionary"
+    }
+  ]
+}
